@@ -10,7 +10,9 @@ lazy val root = (project in file("."))
     name := "Spark Ceph connector",
 
     // https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-common
-    libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.9.2",
+    // FIXME: The version should be 2.9.2 but temporarily use 2.9.1
+    //   because there is no source code in the Maven repository
+    libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.9.1",
     // https://mvnrepository.com/artifact/com.ceph/rados
     libraryDependencies += "com.ceph" % "rados" % "0.5.0",
 
