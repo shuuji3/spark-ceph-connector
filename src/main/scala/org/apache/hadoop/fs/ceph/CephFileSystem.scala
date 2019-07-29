@@ -11,6 +11,8 @@ class CephFileSystem extends FileSystem {
 
   override def getUri: URI = ???
 
+  override def getDefaultPort: Int = 7480
+
   override def open(f: Path, bufferSize: Int): FSDataInputStream = ???
 
   override def create(f: Path, permission: FsPermission, overwrite: Boolean, bufferSize: Int, replication: Short, blockSize: Long, progress: Progressable): FSDataOutputStream = ???
