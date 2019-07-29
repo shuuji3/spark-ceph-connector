@@ -8,7 +8,13 @@ ThisBuild / organizationName := "example"
 lazy val root = (project in file("."))
   .settings(
     name := "Spark Ceph connector",
-    libraryDependencies += scalaTest % Test
+
+    // https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-common
+    libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.9.2",
+    // https://mvnrepository.com/artifact/com.ceph/rados
+    libraryDependencies += "com.ceph" % "rados" % "0.5.0",
+
+    libraryDependencies += scalaTest % Test,
   )
 
 // Uncomment the following for publishing to Sonatype.
