@@ -1,11 +1,12 @@
 package org.apache.hadoop.fs.ceph
 
-import org.scalatest.FunSuite
+import org.scalatest._
 
-class CephFileSystemTest extends FunSuite {
+class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
 
-  test("testGetScheme") {
-    // FIXME: The symbol CephFileSystem cannot be found error
-    //assert(CephFileSystem.getScheme() === "ceph")
+  val fs = new CephFileSystem()
+
+  "getScheme" should "return 'ceph' scheme" in {
+    fs.getScheme shouldEqual "ceph"
   }
 }
