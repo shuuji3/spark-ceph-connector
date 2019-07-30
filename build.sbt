@@ -7,22 +7,28 @@ ThisBuild / organizationName := "example"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "Spark Ceph connector",
+    name := "spark-ceph-connector",
 
     // https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-common
     // FIXME: The version should be 2.9.2 but temporarily use 2.9.1
     //   because there is no source code in the Maven repository
     libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.9.1",
+
     // https://mvnrepository.com/artifact/com.ceph/rados
     libraryDependencies += "com.ceph" % "rados" % "0.5.0",
 
     libraryDependencies += scalaTest % Test,
+
+    assemblyMergeStrategy in assembly := {
+      case PathList("META-INF", xs@_*) => MergeStrategy.discard
+      case x => MergeStrategy.first
+    }
   )
 
 // Uncomment the following for publishing to Sonatype.
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for more detail.
 
- ThisBuild / description := "Spark Ceph connector"
+ThisBuild / description := "spark-ceph-connector"
  ThisBuild / licenses    := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
  ThisBuild / homepage    := Some(url("https://github.com/shuuji3/spark-ceph-connector"))
  ThisBuild / scmInfo := Some(
