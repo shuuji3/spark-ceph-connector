@@ -7,11 +7,15 @@ import org.apache.hadoop.fs.{FSDataInputStream, FSDataOutputStream, FileStatus, 
 import org.apache.hadoop.util.Progressable
 
 class CephFileSystem extends FileSystem {
-  override def getScheme: String = "ceph"
+  override def getUri: URI = getFileSystemRoot.toUri
 
-  override def getUri: URI = ???
+  def getFileSystemRoot = new Path(getScheme + "://" + rootBucket + "/")
 
-  override def getDefaultPort: Int = 7480
+  def rootBucket = "test-bucket" // temporary definition
+
+  override def getScheme = "ceph"
+
+  override def getDefaultPort = 0
 
   override def open(f: Path, bufferSize: Int): FSDataInputStream = ???
 
