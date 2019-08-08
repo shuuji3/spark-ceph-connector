@@ -129,7 +129,10 @@ class CephFileSystem extends FileSystem {
    *
    * @return the directory pathname
    */
-  override def getWorkingDirectory: Path = null
+  override def getWorkingDirectory: Path = {
+    // TODO: implement according to the current path
+    getFileSystemRoot
+  }
 
   /**
    * Set the current working directory for the given FileSystem. All relative
