@@ -14,4 +14,8 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
   "getFileSystemRoot" should "return 'ceph://test-bucket/'" in {
     fs.getFileSystemRoot shouldEqual new Path("ceph://test-bucket/")
   }
+
+  "getWorkingDirectory" should "return 'ceph://test-bucket/'" in {
+    fs.getWorkingDirectory shouldEqual new Path("ceph://test-bucket/")
+  }
 }
