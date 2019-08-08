@@ -10,15 +10,15 @@ import com.ceph.rados.exceptions.RadosNotFoundException
 import com.ceph.rados.{IoCTX, Rados}
 
 class CephFileSystem extends FileSystem {
-  val poolName = "scala" // TODO: Change temporary definition
-  val confFilePath = "/home/shuuji3/ceph-cluster/ceph.conf"
+  val poolName: String = "scala" // TODO: Change temporary definition
+  val confFilePath: String = "/home/shuuji3/ceph-cluster/ceph.conf"
 
   // Connect to a Ceph cluster
-  val cluster = new Rados("admin")
+  val cluster: Rados = new Rados("admin")
   cluster.confReadFile(new File(confFilePath))
   cluster.connect()
 
-  def rootBucket = "test-bucket" // TODO: Change temporary definition
+  def rootBucket: String = "test-bucket" // TODO: Change temporary definition
 
   /**
    * Returns a URI which identifies this FileSystem.
@@ -27,9 +27,9 @@ class CephFileSystem extends FileSystem {
    */
   override def getUri: URI = getFileSystemRoot.toUri
 
-  def getFileSystemRoot = new Path(getScheme + "://" + rootBucket + "/")
+  def getFileSystemRoot: Path = new Path(getScheme + "://" + rootBucket + "/")
 
-  override def getScheme = "ceph"
+  override def getScheme: String = "ceph"
 
   /**
    * Opens an FSDataInputStream at the indicated Path.
@@ -81,7 +81,7 @@ class CephFileSystem extends FileSystem {
    * @throws IOException on failure
    */
   @throws[IOException]
-  override def rename(src: Path, dst: Path) = false
+  override def rename(src: Path, dst: Path): Boolean = false
 
   /**
    * Delete a file.
@@ -122,7 +122,7 @@ class CephFileSystem extends FileSystem {
    */
   @throws[FileNotFoundException]
   @throws[IOException]
-  override def listStatus(f: Path) = new Array[FileStatus](0)
+  override def listStatus(f: Path): Array[FileStatus] = new Array[FileStatus](0)
 
   /**
    * Get the current working directory for the given FileSystem
@@ -150,7 +150,7 @@ class CephFileSystem extends FileSystem {
    * @throws IOException IO failure
    */
   @throws[IOException]
-  override def mkdirs(f: Path, permission: FsPermission) = false
+  override def mkdirs(f: Path, permission: FsPermission): Boolean = false
 
   /**
    * Return a file status object that represents the path.
