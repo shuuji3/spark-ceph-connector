@@ -10,15 +10,23 @@ import com.ceph.rados.exceptions.RadosNotFoundException
 import com.ceph.rados.{IoCTX, Rados}
 
 class CephFileSystem extends FileSystem {
-  val poolName: String = "scala" // TODO: Change temporary definition
-  val confFilePath: String = "/home/shuuji3/ceph-cluster/ceph.conf"
+  var rootBucket: String = "test-bucket" // TODO: Change temporary definition
+  var confFilePath: String = "/home/shuuji3/ceph-cluster/ceph.conf"
+  var workingDirectory: Path = getFileSystemRoot
 
   // Connect to a Ceph cluster
   val cluster: Rados = new Rados("admin")
   cluster.confReadFile(new File(confFilePath))
   cluster.connect()
 
-  def rootBucket: String = "test-bucket" // TODO: Change temporary definition
+  def getFileSystemRoot: Path = new Path(getScheme + "://" + rootBucket + "/")
+
+  private def makeAbsolutePath(path: Path): Path = {
+    if (path.isAbsolute) {
+      return path
+    }
+    new Path(workingDirectory, path)
+  }
 
   /**
    * Returns a URI which identifies this FileSystem.
@@ -26,8 +34,6 @@ class CephFileSystem extends FileSystem {
    * @return the URI of this filesystem.
    */
   override def getUri: URI = getFileSystemRoot.toUri
-
-  def getFileSystemRoot: Path = new Path(getScheme + "://" + rootBucket + "/")
 
   override def getScheme: String = "ceph"
 
@@ -96,7 +102,7 @@ class CephFileSystem extends FileSystem {
   @throws[IOException]
   override def delete(f: Path, recursive: Boolean): Boolean = {
     // TODO: handle the recursive param
-    val ctx = cluster.ioCtxCreate(poolName)
+    val ctx = cluster.ioCtxCreate(rootBucket)
     try {
       ctx.remove("hello.txt") // TODO: change temp oid
       true
@@ -130,8 +136,7 @@ class CephFileSystem extends FileSystem {
    * @return the directory pathname
    */
   override def getWorkingDirectory: Path = {
-    // TODO: implement according to the current path
-    getFileSystemRoot
+    workingDirectory
   }
 
   /**
@@ -141,6 +146,8 @@ class CephFileSystem extends FileSystem {
    * @param new_dir Path of new working directory
    */
   override def setWorkingDirectory(new_dir: Path): Unit = {
+    val path = makeAbsolutePath(new_dir)
+    workingDirectory = path
   }
 
   /**
