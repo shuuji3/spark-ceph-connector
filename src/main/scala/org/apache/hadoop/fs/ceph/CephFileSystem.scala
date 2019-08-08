@@ -3,11 +3,23 @@ package org.apache.hadoop.fs.ceph
 import org.apache.hadoop.fs._
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.util.Progressable
-import java.io.FileNotFoundException
-import java.io.IOException
+import java.io.{File, FileNotFoundException, IOException}
 import java.net.URI
 
+import com.ceph.rados.exceptions.RadosNotFoundException
+import com.ceph.rados.{IoCTX, Rados}
+
 class CephFileSystem extends FileSystem {
+  val poolName = "scala" // TODO: Change temporary definition
+  val confFilePath = "/home/shuuji3/ceph-cluster/ceph.conf"
+
+  // Connect to a Ceph cluster
+  val cluster = new Rados("admin")
+  cluster.confReadFile(new File(confFilePath))
+  cluster.connect()
+
+  def rootBucket = "test-bucket" // TODO: Change temporary definition
+
   /**
    * Returns a URI which identifies this FileSystem.
    *
@@ -16,8 +28,6 @@ class CephFileSystem extends FileSystem {
   override def getUri: URI = getFileSystemRoot.toUri
 
   def getFileSystemRoot = new Path(getScheme + "://" + rootBucket + "/")
-
-  def rootBucket = "test-bucket" // temporary definition
 
   override def getScheme = "ceph"
 
