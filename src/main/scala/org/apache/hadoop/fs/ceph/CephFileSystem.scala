@@ -94,7 +94,19 @@ class CephFileSystem extends FileSystem {
    * @throws IOException IO failure
    */
   @throws[IOException]
-  override def delete(f: Path, recursive: Boolean) = false
+  override def delete(f: Path, recursive: Boolean): Boolean = {
+    // TODO: handle the recursive param
+    val ctx = cluster.ioCtxCreate(poolName)
+    try {
+      ctx.remove("hello.txt") // TODO: change temp oid
+      true
+    } catch {
+      case e: RadosNotFoundException => false
+      case e => false
+    } finally {
+      ctx.close()
+    }
+  }
 
   /**
    * List the statuses of the files/directories in the given path if the path is
