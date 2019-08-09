@@ -167,7 +167,7 @@ class CephFileSystem extends FileSystem {
     val ctx = cluster.ioCtxCreate(rootBucket)
     try {
       val stat = ctx.stat("hello.txt") // TODO: change temp oid
-      return new FileStatus(
+      new FileStatus(
         stat.getSize,
         false,
         getDefaultReplication(path),
