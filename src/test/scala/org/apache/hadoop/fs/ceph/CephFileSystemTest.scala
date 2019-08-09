@@ -28,4 +28,9 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.setWorkingDirectory(new Path("dir2/dir3"))
     fs.getWorkingDirectory shouldEqual new Path("ceph://test-bucket/dir1/dir2/dir3")
   }
+
+  "setWorkingDirectory('..') - relative path" should "return 'ceph://test-bucket/dir1/dir2'" in {
+    fs.setWorkingDirectory(new Path(".."))
+    fs.getWorkingDirectory shouldEqual new Path("ceph://test-bucket/dir1/dir2")
+  }
 }
