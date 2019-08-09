@@ -38,8 +38,13 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.getWorkingDirectory shouldEqual new Path("ceph://test-bucket/dir1/dir2")
   }
 
-  "getFileStatus(new Path('hello.txt')).getLen" should "return 12" in {
-    fs.getFileStatus(new Path("hello.txt")).getLen shouldEqual 12
+  "setWorkingDirectory('../../') - relative path" should "return 'ceph://test-bucket/'" in {
+    fs.setWorkingDirectory(new Path("../../"))
+    fs.getWorkingDirectory shouldEqual new Path("ceph://test-bucket/")
+  }
+
+  "getFileStatus(new Path('hello.txt')).getLen" should "return 18" in {
+    fs.getFileStatus(new Path("hello.txt")).getLen shouldEqual 18
   }
 
   "getFileStatus(new Path('hello.txt')).getOwner" should "return ''" in {
