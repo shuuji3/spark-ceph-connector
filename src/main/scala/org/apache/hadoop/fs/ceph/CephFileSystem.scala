@@ -100,7 +100,7 @@ class CephFileSystem extends FileSystem {
       true
     } catch {
       case e: RadosNotFoundException => false
-      case e => false
+      case e: Throwable => throw new IOException
     } finally {
       ctx.close()
     }
@@ -180,8 +180,8 @@ class CephFileSystem extends FileSystem {
         path
       )
     } catch {
-      case e: RadosNotFoundException => throw FileNotFoundException
-      case e => throw IOException
+      case e: RadosNotFoundException => throw new FileNotFoundException
+      case e: Throwable => throw new IOException
     } finally {
       ctx.close()
     }
