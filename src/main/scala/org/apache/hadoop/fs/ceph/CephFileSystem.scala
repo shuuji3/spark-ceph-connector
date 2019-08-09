@@ -19,21 +19,14 @@ class CephFileSystem extends FileSystem {
   cluster.confReadFile(new File(confFilePath))
   cluster.connect()
 
-  def getFileSystemRoot: Path = new Path(getScheme + "://" + rootBucket + "/")
-
-  private def makeAbsolutePath(path: Path): Path = {
-    if (path.isAbsolute) {
-      return path
-    }
-    new Path(workingDirectory, path)
-  }
-
   /**
    * Returns a URI which identifies this FileSystem.
    *
    * @return the URI of this filesystem.
    */
   override def getUri: URI = getFileSystemRoot.toUri
+
+  def getFileSystemRoot: Path = new Path(getScheme + "://" + rootBucket + "/")
 
   override def getScheme: String = "ceph"
 
@@ -146,7 +139,7 @@ class CephFileSystem extends FileSystem {
    * @param new_dir Path of new working directory
    */
   override def setWorkingDirectory(new_dir: Path): Unit = {
-    val path = makeAbsolutePath(new_dir)
+    val path = fixRelativePart(new_dir)
     workingDirectory = path
   }
 
