@@ -1,21 +1,20 @@
 package org.apache.hadoop.fs.ceph
 
-import org.apache.hadoop.fs._
-import org.apache.hadoop.fs.permission.FsPermission
-import org.apache.hadoop.util.Progressable
 import java.io.{File, FileNotFoundException, IOException}
 import java.net.URI
 
+import com.ceph.rados.Rados
 import com.ceph.rados.exceptions.RadosNotFoundException
-import com.ceph.rados.{IoCTX, Rados}
+import org.apache.hadoop.fs._
+import org.apache.hadoop.fs.permission.FsPermission
+import org.apache.hadoop.util.Progressable
 
 class CephFileSystem extends FileSystem {
+  // Connect to a Ceph cluster
+  val cluster: Rados = new Rados("admin")
   var rootBucket: String = "test-bucket" // TODO: Change temporary definition
   var confFilePath: String = "/home/shuuji3/ceph-cluster/ceph.conf"
   var workingDirectory: Path = getFileSystemRoot
-
-  // Connect to a Ceph cluster
-  val cluster: Rados = new Rados("admin")
   cluster.confReadFile(new File(confFilePath))
   cluster.connect()
 
@@ -164,5 +163,27 @@ class CephFileSystem extends FileSystem {
    * @throws IOException           see specific implementation
    */
   @throws[IOException]
-  override def getFileStatus(f: Path): FileStatus = null
+  override def getFileStatus(path: Path): FileStatus = {
+    val ctx = cluster.ioCtxCreate(rootBucket)
+    try {
+      val stat = ctx.stat("hello.txt") // TODO: change temp oid
+      return new FileStatus(
+        stat.getSize,
+        false,
+        getDefaultReplication(path),
+        getDefaultBlockSize(path),
+        stat.getMtime,
+        0,
+        null,
+        null,
+        null,
+        path
+      )
+    } catch {
+      case e: RadosNotFoundException => throw FileNotFoundException
+      case e => throw IOException
+    } finally {
+      ctx.close()
+    }
+  }
 }

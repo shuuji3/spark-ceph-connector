@@ -33,4 +33,28 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.setWorkingDirectory(new Path(".."))
     fs.getWorkingDirectory shouldEqual new Path("ceph://test-bucket/dir1/dir2")
   }
+
+  "getFileStatus(new Path('hello.txt')).getLen" should "return 12" in {
+    fs.getFileStatus(new Path("hello.txt")).getLen shouldEqual 12
+  }
+
+  "getFileStatus(new Path('hello.txt')).getOwner" should "return ''" in {
+    fs.getFileStatus(new Path("hello.txt")).getOwner shouldEqual ""
+  }
+
+  "getFileStatus(new Path('hello.txt')).getGroup" should "return ''" in {
+    fs.getFileStatus(new Path("hello.txt")).getGroup shouldEqual ""
+  }
+
+  "getFileStatus(new Path('hello.txt')).getSymlink" should "return false" in {
+    fs.getFileStatus(new Path("hello.txt")).getSymlink shouldEqual false
+  }
+
+  "getFileStatus(new Path('hello.txt')).getReplication" should "return 1" in {
+    fs.getFileStatus(new Path("hello.txt")).getReplication shouldEqual 1
+  }
+
+  "getFileStatus(new Path('hello.txt')).getBlockSize" should "return 32 * 1024 * 1024" in {
+    fs.getFileStatus(new Path("hello.txt")).getBlockSize shouldEqual 32 * 1024 * 1024
+  }
 }
