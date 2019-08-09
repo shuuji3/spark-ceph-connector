@@ -1,11 +1,15 @@
 package org.apache.hadoop.fs.ceph
 
+import java.io.IOException
+
+import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.scalatest._
 
 class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
 
   val fs = new CephFileSystem()
+  fs.setConf(new Configuration)
 
   "getScheme" should "return 'ceph' scheme" in {
     fs.getScheme shouldEqual "ceph"
@@ -46,8 +50,12 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.getFileStatus(new Path("hello.txt")).getGroup shouldEqual ""
   }
 
-  "getFileStatus(new Path('hello.txt')).getSymlink" should "return false" in {
-    fs.getFileStatus(new Path("hello.txt")).getSymlink shouldEqual false
+  "getFileStatus(new Path('hello.txt')).getSymlink" should
+    "return IOException((\"Path hello.txt is not a symbolic link\"))" in {
+    val e = intercept[IOException] {
+      fs.getFileStatus(new Path("hello.txt")).getSymlink
+    }
+    e.getMessage shouldEqual "Path hello.txt is not a symbolic link"
   }
 
   "getFileStatus(new Path('hello.txt')).getReplication" should "return 1" in {
