@@ -170,7 +170,7 @@ class CephFileSystem extends FileSystem {
   /**
    * Return a file status object that represents the path.
    *
-   * @param f The path we want information from
+   * @param path The path we want information from
    * @return a FileStatus object
    * @throws FileNotFoundException when the path does not exist
    * @throws IOException           see specific implementation
@@ -179,18 +179,20 @@ class CephFileSystem extends FileSystem {
   override def getFileStatus(path: Path): FileStatus = {
     val ctx = cluster.ioCtxCreate(rootBucket)
     try {
-      val stat = ctx.stat("hello.txt") // TODO: change temp oid
+      val absolutePath: Path = fixRelativePart(path)
+      val objectName = getRadosObjectName(absolutePath)
+      val stat = ctx.stat(objectName)
       new FileStatus(
         stat.getSize,
         false,
-        getDefaultReplication(path),
-        getDefaultBlockSize(path),
+        getDefaultReplication(absolutePath),
+        getDefaultBlockSize(absolutePath),
         stat.getMtime,
         0,
         null,
         null,
         null,
-        path
+        absolutePath
       )
     } catch {
       case e: RadosNotFoundException => throw new FileNotFoundException

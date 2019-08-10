@@ -56,11 +56,11 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   "getFileStatus(new Path('hello.txt')).getSymlink" should
-    "return IOException((\"Path hello.txt is not a symbolic link\"))" in {
+    "return IOException((\"Path [ceph://test-bucket/]hello.txt is not a symbolic link\"))" in {
     val e = intercept[IOException] {
       fs.getFileStatus(new Path("hello.txt")).getSymlink
     }
-    e.getMessage shouldEqual "Path hello.txt is not a symbolic link"
+    e.getMessage should endWith("hello.txt is not a symbolic link")
   }
 
   "getFileStatus(new Path('hello.txt')).getReplication" should "return 1" in {
