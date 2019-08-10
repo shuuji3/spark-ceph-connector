@@ -70,4 +70,16 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
   "getFileStatus(new Path('hello.txt')).getBlockSize" should "return 32 * 1024 * 1024" in {
     fs.getFileStatus(new Path("hello.txt")).getBlockSize shouldEqual 32 * 1024 * 1024
   }
+
+  "getRadosObjectName(new Path('ceph://bucket-test/dir/object')" should "return dir/object" in {
+    fs.getRadosObjectName(new Path("ceph://bucket-name/dir/object")) shouldEqual "dir/object"
+  }
+
+  "getRadosObjectName(new Path('dir/object')" should "return dir/object" in {
+    fs.getRadosObjectName(new Path("dir/object")) shouldEqual "dir/object"
+  }
+
+  "getRadosObjectName(new Path('/dir/object')" should "return dir/object" in {
+    fs.getRadosObjectName(new Path("/dir/object")) shouldEqual "dir/object"
+  }
 }

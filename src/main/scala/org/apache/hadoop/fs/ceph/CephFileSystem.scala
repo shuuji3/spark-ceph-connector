@@ -19,6 +19,17 @@ class CephFileSystem extends FileSystem {
   cluster.connect()
 
   /**
+   * Create a Rados object name from Path
+   *
+   * @param path relative or absolute path i.e. <code>Path("/dir/object-name")</code>
+   * @return rados object name i.e. <code>dir/object-name</code>
+   */
+  def getRadosObjectName(path: Path): String = {
+    val objectPath: String = fixRelativePart(path).toUri.getPath
+    "^/".r.replaceFirstIn(objectPath, "") // Remove prefix '/'
+  }
+
+  /**
    * Returns a URI which identifies this FileSystem.
    *
    * @return the URI of this filesystem.
@@ -120,7 +131,9 @@ class CephFileSystem extends FileSystem {
    */
   @throws[FileNotFoundException]
   @throws[IOException]
-  override def listStatus(f: Path): Array[FileStatus] = new Array[FileStatus](0)
+  override def listStatus(f: Path): Array[FileStatus] = {
+    new Array[FileStatus](0)
+  }
 
   /**
    * Get the current working directory for the given FileSystem
