@@ -79,7 +79,9 @@ class CephFileSystem extends FileSystem {
    *                                       (default).
    */
   @throws[IOException]
-  override def append(f: Path, bufferSize: Int, progress: Progressable): FSDataOutputStream = null
+  override def append(f: Path, bufferSize: Int, progress: Progressable): FSDataOutputStream = {
+    throw new UnsupportedOperationException("CephFileSystem: not supported")
+  }
 
   /**
    * Renames Path src to Path dst.
