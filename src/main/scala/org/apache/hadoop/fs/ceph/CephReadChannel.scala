@@ -5,16 +5,15 @@ import java.nio.ByteBuffer
 import java.nio.channels.{ClosedChannelException, NonWritableChannelException, ReadableByteChannel, SeekableByteChannel}
 
 import com.ceph.rados.IoCTX
-import org.apache.hadoop.fs.Path
 
-class CephReadChannel(ioCtx: IoCTX, path: Path, bufferSize: Int) extends SeekableByteChannel {
+class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends SeekableByteChannel {
   // TDOO: Implement constructor
   // ByteBuffer.allocate(bufferSize)
 
   var channelIsOpen: Boolean = true
   var channelPosition: Long = 0
   var channel: ReadableByteChannel = _
-  var objectSize: Long = -1
+  val objectSize: Long = ioCtx.stat(objectName).getSize
 
   /**
    * Reads a sequence of bytes from this channel into the given buffer.

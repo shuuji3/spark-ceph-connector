@@ -4,11 +4,10 @@ import java.io.{EOFException, IOException}
 import java.nio.channels.SeekableByteChannel
 
 import com.ceph.rados.IoCTX
-import org.apache.hadoop.fs.{FSInputStream, Path}
+import org.apache.hadoop.fs.FSInputStream
 
-class CephFSInputStream(ioCtx: IoCTX, path: Path, bufferSize: Int) extends FSInputStream {
-  val channel: SeekableByteChannel = new CephReadChannel(ioCtx, path, bufferSize)
-
+class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends FSInputStream {
+  val channel: SeekableByteChannel = new CephReadChannel(ioCtx, objectName, bufferSize)
   /**
    * Seeks a different copy of the data.  Returns true if
    * found a new source, false otherwise.

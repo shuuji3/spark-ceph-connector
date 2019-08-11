@@ -39,7 +39,8 @@ class CephFileSystem extends FileSystem {
   @throws[IOException]
   override def open(path: Path, bufferSize: Int): FSDataInputStream = {
     val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
-    val in = new CephFSInputStream(ioCtx, path, bufferSize)
+    val objectName = getRadosObjectName(path)
+    val in = new CephFSInputStream(ioCtx, objectName, bufferSize)
     new FSDataInputStream(in)
   }
 
