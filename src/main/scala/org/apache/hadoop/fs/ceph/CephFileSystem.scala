@@ -3,8 +3,8 @@ package org.apache.hadoop.fs.ceph
 import java.io.{File, FileNotFoundException, IOException}
 import java.net.URI
 
-import com.ceph.rados.Rados
 import com.ceph.rados.exceptions.RadosNotFoundException
+import com.ceph.rados.{IoCTX, Rados}
 import org.apache.hadoop.fs._
 import org.apache.hadoop.fs.permission.FsPermission
 import org.apache.hadoop.util.Progressable
@@ -17,17 +17,6 @@ class CephFileSystem extends FileSystem {
   var workingDirectory: Path = getFileSystemRoot
   cluster.confReadFile(new File(confFilePath))
   cluster.connect()
-
-  /**
-   * Create a Rados object name from Path
-   *
-   * @param path relative or absolute path i.e. <code>Path("/dir/object-name")</code>
-   * @return rados object name i.e. <code>dir/object-name</code>
-   */
-  def getRadosObjectName(path: Path): String = {
-    val objectPath: String = fixRelativePart(path).toUri.getPath
-    "^/".r.replaceFirstIn(objectPath, "") // Remove prefix '/'
-  }
 
   /**
    * Returns a URI which identifies this FileSystem.
@@ -107,15 +96,15 @@ class CephFileSystem extends FileSystem {
   @throws[IOException]
   override def delete(f: Path, recursive: Boolean): Boolean = {
     // TODO: handle the recursive param
-    val ctx = cluster.ioCtxCreate(rootBucket)
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
-      ctx.remove("hello.txt") // TODO: change temp oid
+      ioCtx.remove("hello.txt") // TODO: change temp oid
       true
     } catch {
       case e: RadosNotFoundException => false
       case e: Throwable => throw new IOException
     } finally {
-      ctx.close()
+      ioCtx.close()
     }
   }
 
@@ -134,9 +123,9 @@ class CephFileSystem extends FileSystem {
   @throws[FileNotFoundException]
   @throws[IOException]
   override def listStatus(path: Path): Array[FileStatus] = {
-    val ctx = cluster.ioCtxCreate(rootBucket)
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
-      val objectNames = ctx.listObjects()
+      val objectNames = ioCtx.listObjects()
       val nums = objectNames.length
       val statusList = new Array[FileStatus](nums)
       for (i <- 0 until nums) {
@@ -149,8 +138,56 @@ class CephFileSystem extends FileSystem {
       statusList
       // objectsNames.map(objectName => getFileStatus(new Path(objectName))) // does not work...
     } finally {
-      ctx.close()
+      ioCtx.close()
     }
+  }
+
+  /**
+   * Return a file status object that represents the path.
+   *
+   * @param path The path we want information from
+   * @return a FileStatus object
+   * @throws FileNotFoundException when the path does not exist
+   * @throws IOException           see specific implementation
+   */
+  @throws[IOException]
+  override def getFileStatus(path: Path): FileStatus = {
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
+    try {
+      val absolutePath: Path = fixRelativePart(path)
+      val objectName = getRadosObjectName(absolutePath)
+      val stat = ioCtx.stat(objectName)
+      new FileStatus(
+        stat.getSize,
+        false,
+        getDefaultReplication(absolutePath),
+        getDefaultBlockSize(absolutePath),
+        stat.getMtime,
+        0,
+        null,
+        null,
+        null,
+        absolutePath
+      )
+    } catch {
+      case e: RadosNotFoundException => throw new FileNotFoundException
+      case e: Throwable =>
+        println("getFileStatus:", e)
+        throw new IOException
+    } finally {
+      ioCtx.close()
+    }
+  }
+
+  /**
+   * Create a Rados object name from Path
+   *
+   * @param path relative or absolute path i.e. <code>Path("/dir/object-name")</code>
+   * @return rados object name i.e. <code>dir/object-name</code>
+   */
+  def getRadosObjectName(path: Path): String = {
+    val objectPath: String = fixRelativePart(path).toUri.getPath
+    "^/".r.replaceFirstIn(objectPath, "") // Remove prefix '/'
   }
 
   /**
@@ -184,41 +221,4 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def mkdirs(f: Path, permission: FsPermission): Boolean = false
-
-  /**
-   * Return a file status object that represents the path.
-   *
-   * @param path The path we want information from
-   * @return a FileStatus object
-   * @throws FileNotFoundException when the path does not exist
-   * @throws IOException           see specific implementation
-   */
-  @throws[IOException]
-  override def getFileStatus(path: Path): FileStatus = {
-    val ctx = cluster.ioCtxCreate(rootBucket)
-    try {
-      val absolutePath: Path = fixRelativePart(path)
-      val objectName = getRadosObjectName(absolutePath)
-      val stat = ctx.stat(objectName)
-      new FileStatus(
-        stat.getSize,
-        false,
-        getDefaultReplication(absolutePath),
-        getDefaultBlockSize(absolutePath),
-        stat.getMtime,
-        0,
-        null,
-        null,
-        null,
-        absolutePath
-      )
-    } catch {
-      case e: RadosNotFoundException => throw new FileNotFoundException
-      case e: Throwable =>
-        println("getFileStatus:", e)
-        throw new IOException
-    } finally {
-      ctx.close()
-    }
-  }
 }
