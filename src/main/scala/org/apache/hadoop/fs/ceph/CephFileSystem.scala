@@ -124,15 +124,31 @@ class CephFileSystem extends FileSystem {
    * Does not guarantee to return the List of files/directories status in a
    * sorted order.
    *
-   * @param f given path
+   * @param path given path
    * @return the statuses of the files/directories in the given patch
    * @throws FileNotFoundException when the path does not exist
    * @throws IOException           see specific implementation
    */
   @throws[FileNotFoundException]
   @throws[IOException]
-  override def listStatus(f: Path): Array[FileStatus] = {
-    new Array[FileStatus](0)
+  override def listStatus(path: Path): Array[FileStatus] = {
+    val ctx = cluster.ioCtxCreate(rootBucket)
+    try {
+      val objectNames = ctx.listObjects()
+      val nums = objectNames.length
+      val statusList = new Array[FileStatus](nums)
+      for (i <- 0 until nums) {
+        val objectName = objectNames(i)
+        // TODO: Check by the given path
+        val objectPath = new Path(objectName)
+        val stat = getFileStatus(objectPath)
+        statusList(i) = stat
+      }
+      statusList
+      // objectsNames.map(objectName => getFileStatus(new Path(objectName))) // does not work...
+    } finally {
+      ctx.close()
+    }
   }
 
   /**
@@ -196,7 +212,9 @@ class CephFileSystem extends FileSystem {
       )
     } catch {
       case e: RadosNotFoundException => throw new FileNotFoundException
-      case e: Throwable => throw new IOException
+      case e: Throwable =>
+        println("getFileStatus:", e)
+        throw new IOException
     } finally {
       ctx.close()
     }
