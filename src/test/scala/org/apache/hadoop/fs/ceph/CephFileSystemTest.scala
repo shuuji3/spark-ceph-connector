@@ -1,6 +1,6 @@
 package org.apache.hadoop.fs.ceph
 
-import java.io.IOException
+import java.io.{FileNotFoundException, IOException}
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -69,6 +69,12 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
 
   "getFileStatus(new Path('hello.txt')).getBlockSize" should "return 32 * 1024 * 1024" in {
     fs.getFileStatus(new Path("hello.txt")).getBlockSize shouldEqual 32 * 1024 * 1024
+  }
+
+  "getFileStatus(new Path('no-exist-file'))" should "throw FileNotFoundException" in {
+    intercept[FileNotFoundException] {
+      fs.getFileStatus(new Path("no-exist-file"))
+    }
   }
 
   "getRadosObjectName(new Path('ceph://bucket-test/dir/object')" should "return dir/object" in {
