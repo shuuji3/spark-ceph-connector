@@ -4,7 +4,13 @@ import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.{ClosedChannelException, NonWritableChannelException, ReadableByteChannel, SeekableByteChannel}
 
-class CephReadChannel extends SeekableByteChannel {
+import com.ceph.rados.IoCTX
+import org.apache.hadoop.fs.Path
+
+class CephReadChannel(ioCtx: IoCTX, path: Path, bufferSize: Int) extends SeekableByteChannel {
+  // TDOO: Implement constructor
+  // ByteBuffer.allocate(bufferSize)
+
   var channelIsOpen: Boolean = true
   var channelPosition: Long = 0
   var channel: ReadableByteChannel = _
@@ -19,7 +25,11 @@ class CephReadChannel extends SeekableByteChannel {
    * ReadableByteChannel} interface.
    */
   @throws[IOException]
-  override def read(dst: ByteBuffer): Int
+  override def read(dst: ByteBuffer): Int = {
+    // TODO: copy data of RADOS object to dst (ByteBuffer) by using librados
+    // val nRead = ioCtx.read(objectName, len, offset, buf)
+    0
+  }
 
   /**
    * Writes a sequence of bytes to this channel from the given buffer.

@@ -32,12 +32,16 @@ class CephFileSystem extends FileSystem {
   /**
    * Opens an FSDataInputStream at the indicated Path.
    *
-   * @param f          the file name to open
+   * @param path       the file name to open
    * @param bufferSize the size of the buffer to be used.
    * @throws IOException IO failure
    */
   @throws[IOException]
-  override def open(f: Path, bufferSize: Int): FSDataInputStream = null
+  override def open(path: Path, bufferSize: Int): FSDataInputStream = {
+    val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
+    val in = new CephFSInputStream(ioCtx, path, bufferSize)
+    new FSDataInputStream(in)
+  }
 
   /**
    * Create an FSDataOutputStream at the indicated Path with write-progress
