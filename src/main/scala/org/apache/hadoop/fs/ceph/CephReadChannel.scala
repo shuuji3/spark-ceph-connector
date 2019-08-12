@@ -7,9 +7,6 @@ import java.nio.channels.{ClosedChannelException, NonWritableChannelException, S
 import com.ceph.rados.IoCTX
 
 class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends SeekableByteChannel {
-  // TODO: Implement constructor
-  // ByteBuffer.allocate(bufferSize)
-
   val objectSize: Long = ioCtx.stat(objectName).getSize
   var channelIsOpen: Boolean = true
   var channelPosition: Long = 0
