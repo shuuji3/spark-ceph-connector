@@ -7,7 +7,7 @@ import java.nio.channels.{ClosedChannelException, NonWritableChannelException, S
 import com.ceph.rados.IoCTX
 
 class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends SeekableByteChannel {
-  // TDOO: Implement constructor
+  // TODO: Implement constructor
   // ByteBuffer.allocate(bufferSize)
 
   val objectSize: Long = ioCtx.stat(objectName).getSize
@@ -93,23 +93,14 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
   @throws[IOException]
   def position(newPosition: Long): CephReadChannel = {
     checkIsOpen()
+    if (newPosition < 0) {
+      throw new IllegalArgumentException("cannot seek to the negative position")
+    }
+    if (newPosition > objectSize) {
+      throw new EOFException("cannot seek over the object size")
+    }
     channelPosition = newPosition
     this
-  }
-
-  /**
-   * Returns the current size of entity to which this channel is connected.
-   *
-   * @return The current size, measured in bytes
-   * @throws  ClosedChannelException
-   * If this channel is closed
-   * @throws  IOException
-   * If some other I/O error occurs
-   */
-  @throws[IOException]
-  def size: Long = {
-    checkIsOpen()
-    objectSize
   }
 
   /**
@@ -126,6 +117,21 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
    * @return <tt>true</tt> if, and only if, this channel is open
    */
   def isOpen: Boolean = channelIsOpen
+
+  /**
+   * Returns the current size of entity to which this channel is connected.
+   *
+   * @return The current size, measured in bytes
+   * @throws  ClosedChannelException
+   * If this channel is closed
+   * @throws  IOException
+   * If some other I/O error occurs
+   */
+  @throws[IOException]
+  def size: Long = {
+    checkIsOpen()
+    objectSize
+  }
 
   /**
    * Truncates the entity, to which this channel is connected, to the given
