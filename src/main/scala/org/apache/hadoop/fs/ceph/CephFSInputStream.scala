@@ -4,9 +4,10 @@ import java.io.{EOFException, IOException}
 import java.nio.ByteBuffer
 
 import com.ceph.rados.IoCTX
-import org.apache.hadoop.fs.FSInputStream
+import org.apache.hadoop.fs.{ByteBufferReadable, FSInputStream}
 
-class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends FSInputStream {
+class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int)
+  extends FSInputStream with ByteBufferReadable {
 
   val channel = new CephReadChannel(ioCtx, objectName, bufferSize)
 
@@ -170,6 +171,12 @@ class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int) exten
   @throws[IOException]
   override def read: Int = {
     val numRead = channel.read(ByteBuffer.wrap(oneByteBuffer))
+    numRead
+  }
+
+  @throws[IOException]
+  override def read(dst: ByteBuffer): Int = {
+    val numRead = channel.read(dst)
     numRead
   }
 }
