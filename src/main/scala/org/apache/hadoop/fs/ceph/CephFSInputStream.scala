@@ -43,7 +43,6 @@ class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int)
     }
   }
 
-  // TODO: implement
   /**
    * Reads up to <code>len</code> bytes of data from the input stream into
    * an array of bytes.  An attempt is made to read as many as
@@ -85,10 +84,10 @@ class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int)
    * end of file is detected, or an exception is thrown. Subclasses are encouraged
    * to provide a more efficient implementation of this method.
    *
-   * @param      b   the buffer into which the data is read.
-   * @param      off the start offset in array <code>b</code>
-   *                 at which the data is written.
-   * @param      len the maximum number of bytes to read.
+   * @param      buf    the buffer into which the data is read.
+   * @param      offset the start offset in array <code>buf</code>
+   *                    at which the data is written.
+   * @param      length the maximum number of bytes to read.
    * @return the total number of bytes read into the buffer, or
    *         <code>-1</code> if there is no more data because the end of
    *         the stream has been reached.
@@ -102,34 +101,17 @@ class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int)
    * @see java.io.InputStream#read()
    */
   @throws[IOException]
-  def read(b: Array[Byte], off: Int, len: Int): Int = {
-    if (b == null) throw new NullPointerException
-    else if (off < 0 || len < 0 || len > b.length - off) throw new IndexOutOfBoundsException
-    else if (len == 0) return 0
-    var c = read
-    if (c == -1) return -1
-    b(off) = c.toByte
-    var i = 1
-    try
-      while ( {
-        i < len
-      }) {
-        c = read
-        if (c == -1) {
-          break
-        } //todo: break is not supported
-        b(off + i) = c.toByte
-
-        {
-          i += 1;
-          i - 1
-        }
-      }
-    catch {
-      case ee: IOException =>
-
+  override def read(buf: Array[Byte], offset: Int, length: Int): Int = {
+    if (buf == null) {
+      throw new NullPointerException
+    } else if (length == 0) {
+      return 0
     }
-    i
+    val numRead = channel.read(ByteBuffer.wrap(buf, offset, length))
+    if (numRead == 0) {
+      return -1 // -1 means EOF
+    }
+    numRead
   }
 
   /**
