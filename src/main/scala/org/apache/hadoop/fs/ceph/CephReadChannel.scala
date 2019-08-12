@@ -24,9 +24,28 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
    */
   @throws[IOException]
   override def read(dst: ByteBuffer): Int = {
-    // TODO: copy data of RADOS object to dst (ByteBuffer) by using librados
-    // val nRead = ioCtx.read(objectName, len, offset, buf)
-    0
+    val length = dst.remaining()
+    val numRead = ioCtx.read(objectName, length, position, dst.array)
+    channelPosition += numRead
+    numRead
+  }
+
+
+  /**
+   * Returns this channel's position.
+   *
+   * @return This channel's position,
+   *         a non-negative integer counting the number of bytes
+   *         from the beginning of the entity to the current position
+   * @throws  ClosedChannelException
+   * If this channel is closed
+   * @throws  IOException
+   * If some other I/O error occurs
+   */
+  @throws[IOException]
+  def position: Long = {
+    checkIsOpen()
+    channelPosition
   }
 
   /**
@@ -44,23 +63,6 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
   @throws[IOException]
   override def write(src: ByteBuffer): Int = {
     throw new IOException("CephReadChannel: cannot change a read-only channel")
-  }
-
-  /**
-   * Returns this channel's position.
-   *
-   * @return This channel's position,
-   *         a non-negative integer counting the number of bytes
-   *         from the beginning of the entity to the current position
-   * @throws  ClosedChannelException
-   * If this channel is closed
-   * @throws  IOException
-   * If some other I/O error occurs
-   */
-  @throws[IOException]
-  def position: Long = {
-    checkIsOpen()
-    channelPosition
   }
 
   /**
