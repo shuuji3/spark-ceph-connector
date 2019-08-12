@@ -1,8 +1,8 @@
 package org.apache.hadoop.fs.ceph
 
-import java.io.IOException
+import java.io.{EOFException, IOException}
 import java.nio.ByteBuffer
-import java.nio.channels.{ClosedChannelException, NonWritableChannelException, ReadableByteChannel, SeekableByteChannel}
+import java.nio.channels.{ClosedChannelException, NonWritableChannelException, SeekableByteChannel}
 
 import com.ceph.rados.IoCTX
 
@@ -10,10 +10,9 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
   // TDOO: Implement constructor
   // ByteBuffer.allocate(bufferSize)
 
+  val objectSize: Long = ioCtx.stat(objectName).getSize
   var channelIsOpen: Boolean = true
   var channelPosition: Long = 0
-  var channel: ReadableByteChannel = _
-  val objectSize: Long = ioCtx.stat(objectName).getSize
 
   /**
    * Reads a sequence of bytes from this channel into the given buffer.
@@ -92,7 +91,7 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
    * If some other I/O error occurs
    */
   @throws[IOException]
-  def position(newPosition: Long): SeekableByteChannel = {
+  def position(newPosition: Long): CephReadChannel = {
     checkIsOpen()
     channelPosition = newPosition
     this
@@ -155,9 +154,7 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
    * If some other I/O error occurs
    */
   @throws[IOException]
-  def truncate(size: Long): SeekableByteChannel = {
-    throw new IOException("CephReadChannel: cannot change a read-only channel")
-  }
+  def truncate(size: Long) = throw new IOException("CephReadChannel: cannot change a read-only channel")
 
   /**
    * Closes this channel.
@@ -179,19 +176,5 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
   @throws[IOException]
   override def close(): Unit = {
     channelIsOpen = false
-    closeChannel()
-  }
-
-  /**
-   * Ensure to close channel
-   */
-  private def closeChannel(): Unit = {
-    if (channel != null) {
-      try {
-        channel.close()
-      } finally {
-        channel = null
-      }
-    }
   }
 }

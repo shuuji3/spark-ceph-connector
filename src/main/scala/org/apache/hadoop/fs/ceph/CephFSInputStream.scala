@@ -17,7 +17,7 @@ class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int) exten
    * Seeks a different copy of the data.  Returns true if
    * found a new source, false otherwise.
    *
-   * @param targetPos
+   * @param targetPos target new position
    */
   @throws[IOException]
   override def seekToNewSource(targetPos: Long) = false
@@ -28,17 +28,17 @@ class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int) exten
     if (length == 0) return 0
     synchronized {
       val oldPos = getPos
-      var nread = -1
+      var numRead = -1
       try {
         seek(position)
-        nread = read(buffer, offset, length)
+        numRead = read(buffer, offset, length)
       } catch {
         case e: EOFException =>
         // end of file; this can be raised by some filesystems
         // (often: object stores); it is swallowed here.
         //        LOG.debug("Downgrading EOFException raised trying to" + " read {} bytes at offset {}", length, offset, e)
       } finally seek(oldPos)
-      nread
+      numRead
     }
   }
 
