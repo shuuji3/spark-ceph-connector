@@ -23,7 +23,9 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
   override def read(dst: ByteBuffer): Int = {
     val length = dst.remaining()
     val numRead = ioCtx.read(objectName, length, position, dst.array)
-    channelPosition += numRead
+    if (numRead > 0) {
+      channelPosition += numRead
+    }
     numRead
   }
 

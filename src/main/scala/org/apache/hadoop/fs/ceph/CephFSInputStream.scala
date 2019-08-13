@@ -153,12 +153,18 @@ class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int)
   @throws[IOException]
   override def read: Int = {
     val numRead = channel.read(ByteBuffer.wrap(oneByteBuffer))
+    if (numRead == 0) {
+      -1
+    }
     numRead
   }
 
   @throws[IOException]
   override def read(dst: ByteBuffer): Int = {
     val numRead = channel.read(dst)
+    if (numRead == 0) {
+      -1
+    }
     numRead
   }
 }
