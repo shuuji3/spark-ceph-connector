@@ -89,9 +89,17 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.getRadosObjectName(new Path("/dir/object")) shouldEqual "dir/object"
   }
 
-  "listStatus" should "contains FileStatus{path=ceph://test-bucket/hello.txt}" in {
-    val statusList = fs.listStatus(new Path("dummy"))
+  // TODO: test the following case
+  // "listStatus('ceph://test-bucket/')" should "contains FileStatus{path=ceph://test-bucket/hello.txt}" in {
+
+  "listStatus('ceph://test-bucket/hello.txt')" should "contains FileStatus{path=ceph://test-bucket/hello.txt}" in {
+    val statusList = fs.listStatus(new Path("ceph://test-bucket/"))
     statusList should contain(fs.getFileStatus(new Path("hello.txt")))
+  }
+
+  "listStatus('dummy-file')" should "not contains any FileStatus" in {
+    val statusList = fs.listStatus(new Path("dummy-file"))
+    statusList.length shouldEqual 0
   }
 
   "open(new Path(\"hello.txt\"))" should "read string 'hello scala world!'" in {
