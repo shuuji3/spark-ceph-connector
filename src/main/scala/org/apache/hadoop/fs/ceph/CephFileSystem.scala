@@ -146,17 +146,19 @@ class CephFileSystem extends FileSystem {
   @throws[FileNotFoundException]
   @throws[IOException]
   override def listStatus(path: Path): Array[FileStatus] = {
+    val radosName = getRadosObjectName(path) // i.e. dir1/object-name
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
       val objectNames = ioCtx.listObjects()
       val nums = objectNames.length
-      val statusList = new Array[FileStatus](nums)
+      var statusList = new Array[FileStatus](0)
       for (i <- 0 until nums) {
         val objectName = objectNames(i)
-        // TODO: Check by the given path
-        val objectPath = new Path(objectName)
-        val stat = getFileStatus(objectPath)
-        statusList(i) = stat
+        if (objectName.startsWith(radosName)) {
+          val objectPath = new Path(objectName)
+          val stat = getFileStatus(objectPath)
+          statusList :+= stat
+        }
       }
       statusList
       // objectsNames.map(objectName => getFileStatus(new Path(objectName))) // FIXME: does not work...
