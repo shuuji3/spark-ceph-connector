@@ -8,8 +8,8 @@ import com.ceph.rados.IoCTX
 
 class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends SeekableByteChannel {
   val objectSize: Long = ioCtx.stat(objectName).getSize
+  var objectPosition: Long = 0
   var channelIsOpen: Boolean = true
-  var channelPosition: Long = 0
 
   /**
    * Reads a sequence of bytes from this channel into the given buffer.
@@ -22,9 +22,11 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
   @throws[IOException]
   override def read(dst: ByteBuffer): Int = {
     val length = dst.remaining()
-    val numRead = ioCtx.read(objectName, length, position, dst.array)
+    val buf = ByteBuffer.allocate(length)
+    val numRead = ioCtx.read(objectName, length, position, buf.array)
+    dst.put(buf)
     if (numRead > 0) {
-      channelPosition += numRead
+      position(position + numRead)
     }
     numRead
   }
@@ -44,7 +46,7 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
   @throws[IOException]
   def position: Long = {
     checkIsOpen()
-    channelPosition
+    objectPosition
   }
 
   /**
@@ -100,8 +102,23 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
     if (newPosition > objectSize) {
       throw new EOFException("cannot seek over the object size")
     }
-    channelPosition = newPosition
+    objectPosition = newPosition
     this
+  }
+
+  /**
+   * Returns the current size of entity to which this channel is connected.
+   *
+   * @return The current size, measured in bytes
+   * @throws  ClosedChannelException
+   * If this channel is closed
+   * @throws  IOException
+   * If some other I/O error occurs
+   */
+  @throws[IOException]
+  def size: Long = {
+    checkIsOpen()
+    objectSize
   }
 
   /**
@@ -118,21 +135,6 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
    * @return <tt>true</tt> if, and only if, this channel is open
    */
   def isOpen: Boolean = channelIsOpen
-
-  /**
-   * Returns the current size of entity to which this channel is connected.
-   *
-   * @return The current size, measured in bytes
-   * @throws  ClosedChannelException
-   * If this channel is closed
-   * @throws  IOException
-   * If some other I/O error occurs
-   */
-  @throws[IOException]
-  def size: Long = {
-    checkIsOpen()
-    objectSize
-  }
 
   /**
    * Truncates the entity, to which this channel is connected, to the given
