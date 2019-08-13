@@ -45,6 +45,33 @@ class CephFileSystem extends FileSystem {
   }
 
   /**
+   * Delete a file.
+   *
+   * @param path      the path to delete.
+   * @param recursive if path is a directory and set to
+   *                  true, the directory is deleted else throws an exception. In
+   *                  case of a file the recursive can be set to either true or false.
+   * @return true if delete is successful else false.
+   * @throws IOException IO failure
+   */
+  @throws[IOException]
+  override def delete(path: Path, recursive: Boolean): Boolean = {
+    // TODO: handle the recursive param
+
+    val objectName = getRadosObjectName(path)
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
+    try {
+      ioCtx.remove(objectName)
+      true
+    } catch {
+      case e: RadosNotFoundException => false
+      case e: Throwable => throw new IOException
+    } finally {
+      ioCtx.close()
+    }
+  }
+
+  /**
    * Create an FSDataOutputStream at the indicated Path with write-progress
    * reporting.
    *
@@ -94,28 +121,14 @@ class CephFileSystem extends FileSystem {
   override def rename(src: Path, dst: Path): Boolean = false
 
   /**
-   * Delete a file.
+   * Create a Rados object name from Path
    *
-   * @param f         the path to delete.
-   * @param recursive if path is a directory and set to
-   *                  true, the directory is deleted else throws an exception. In
-   *                  case of a file the recursive can be set to either true or false.
-   * @return true if delete is successful else false.
-   * @throws IOException IO failure
+   * @param path relative or absolute path i.e. <code>Path("/dir/object-name")</code>
+   * @return rados object name i.e. <code>dir/object-name</code>
    */
-  @throws[IOException]
-  override def delete(f: Path, recursive: Boolean): Boolean = {
-    // TODO: handle the recursive param
-    val ioCtx = cluster.ioCtxCreate(rootBucket)
-    try {
-      ioCtx.remove("hello.txt") // TODO: change temp oid
-      true
-    } catch {
-      case e: RadosNotFoundException => false
-      case e: Throwable => throw new IOException
-    } finally {
-      ioCtx.close()
-    }
+  def getRadosObjectName(path: Path): String = {
+    val objectPath: String = fixRelativePart(path).toUri.getPath
+    "^/".r.replaceFirstIn(objectPath, "") // Remove prefix '/'
   }
 
   /**
@@ -146,7 +159,7 @@ class CephFileSystem extends FileSystem {
         statusList(i) = stat
       }
       statusList
-      // objectsNames.map(objectName => getFileStatus(new Path(objectName))) // does not work...
+      // objectsNames.map(objectName => getFileStatus(new Path(objectName))) // FIXME: does not work...
     } finally {
       ioCtx.close()
     }
@@ -182,22 +195,10 @@ class CephFileSystem extends FileSystem {
     } catch {
       case e: RadosNotFoundException => throw new FileNotFoundException
       case e: Throwable =>
-        println("getFileStatus:", e)
         throw new IOException
     } finally {
       ioCtx.close()
     }
-  }
-
-  /**
-   * Create a Rados object name from Path
-   *
-   * @param path relative or absolute path i.e. <code>Path("/dir/object-name")</code>
-   * @return rados object name i.e. <code>dir/object-name</code>
-   */
-  def getRadosObjectName(path: Path): String = {
-    val objectPath: String = fixRelativePart(path).toUri.getPath
-    "^/".r.replaceFirstIn(objectPath, "") // Remove prefix '/'
   }
 
   /**
