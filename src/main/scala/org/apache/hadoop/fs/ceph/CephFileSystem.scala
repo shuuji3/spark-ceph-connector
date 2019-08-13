@@ -39,7 +39,7 @@ class CephFileSystem extends FileSystem {
   @throws[IOException]
   override def open(path: Path, bufferSize: Int): FSDataInputStream = {
     val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
-    val objectName = getRadosObjectName(path)
+    val objectName: String = getRadosObjectName(path)
     val in = new CephFSInputStream(ioCtx, objectName, bufferSize)
     new FSDataInputStream(in)
   }
@@ -48,7 +48,7 @@ class CephFileSystem extends FileSystem {
    * Create an FSDataOutputStream at the indicated Path with write-progress
    * reporting.
    *
-   * @param f           the file name to open
+   * @param path        the file name to open
    * @param permission  file permission
    * @param overwrite   if a file with this name already exists, then if true,
    *                    the file will be overwritten, and if false an error will be thrown.
@@ -60,7 +60,12 @@ class CephFileSystem extends FileSystem {
    * @see #setPermission(Path, FsPermission)
    */
   @throws[IOException]
-  override def create(f: Path, permission: FsPermission, overwrite: Boolean, bufferSize: Int, replication: Short, blockSize: Long, progress: Progressable): FSDataOutputStream = null
+  override def create(path: Path, permission: FsPermission, overwrite: Boolean, bufferSize: Int, replication: Short, blockSize: Long, progress: Progressable): FSDataOutputStream = {
+    val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
+    val objectName = getRadosObjectName(path)
+    val out = new CephFSDataOutputStream(ioCtx, objectName, bufferSize)
+    new FSDataOutputStream(out, null)
+  }
 
   /**
    * Append to an existing file (optional operation).
