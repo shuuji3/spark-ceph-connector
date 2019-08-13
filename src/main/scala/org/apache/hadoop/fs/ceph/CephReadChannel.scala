@@ -6,6 +6,13 @@ import java.nio.channels.{ClosedChannelException, NonWritableChannelException, S
 
 import com.ceph.rados.IoCTX
 
+/**
+ * Creates a read-only channel to a single RADOS object in Ceph cluster.
+ *
+ * @param ioCtx      connection to the specified pool
+ * @param objectName RADOS object name in the pool
+ * @param bufferSize default buffer size (not used yet)
+ */
 class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends SeekableByteChannel {
   val objectSize: Long = ioCtx.stat(objectName).getSize
   var objectPosition: Long = 0
