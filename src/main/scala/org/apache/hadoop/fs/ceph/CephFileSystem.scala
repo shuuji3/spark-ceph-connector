@@ -150,18 +150,7 @@ class CephFileSystem extends FileSystem {
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
       val objectNames = ioCtx.listObjects()
-      val nums = objectNames.length
-      var statusList = new Array[FileStatus](0)
-      for (i <- 0 until nums) {
-        val objectName = objectNames(i)
-        if (objectName.startsWith(radosName)) {
-          val objectPath = new Path(objectName)
-          val stat = getFileStatus(objectPath)
-          statusList :+= stat
-        }
-      }
-      statusList
-      // objectsNames.map(objectName => getFileStatus(new Path(objectName))) // FIXME: does not work...
+      objectNames.filter(_.startsWith(radosName)).map(objectName => getFileStatus(new Path(objectName)))
     } finally {
       ioCtx.close()
     }
