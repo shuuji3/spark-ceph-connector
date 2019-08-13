@@ -107,10 +107,7 @@ class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int)
     } else if (length == 0) {
       return 0
     }
-    val numRead = channel.read(ByteBuffer.wrap(buf, offset, length))
-    if (numRead == 0) {
-      return -1 // -1 means EOF
-    }
+    val numRead = read(ByteBuffer.wrap(buf, offset, length))
     numRead
   }
 
@@ -152,18 +149,21 @@ class CephFSInputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int)
    */
   @throws[IOException]
   override def read: Int = {
-    val numRead = channel.read(ByteBuffer.wrap(oneByteBuffer))
-    if (numRead == 0) {
-      -1
-    }
+    val numRead = read(ByteBuffer.wrap(oneByteBuffer))
     numRead
   }
 
+  /**
+   * Reads Rados object via channel and store data in dst
+   *
+   * @param dst ByteBuffer to be stored data of Rados object
+   * @return
+   */
   @throws[IOException]
   override def read(dst: ByteBuffer): Int = {
     val numRead = channel.read(dst)
     if (numRead == 0) {
-      -1
+      -1 // -1 means EOF
     }
     numRead
   }
