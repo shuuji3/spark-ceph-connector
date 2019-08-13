@@ -93,4 +93,21 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     val statusList = fs.listStatus(new Path("dummy"))
     statusList should contain(fs.getFileStatus(new Path("hello.txt")))
   }
+
+  "open(new Path(\"hello.txt\"))" should "read string 'hello scala world!'" in {
+    val inputStream = fs.open(new Path("hello.txt"))
+    val buf = new Array[Byte](8)
+
+    var numRead = inputStream.read(buf)
+    numRead shouldEqual 8
+    new String(buf.array) shouldEqual "hello sc"
+
+    numRead = inputStream.read(buf)
+    numRead shouldEqual 8
+    new String(buf.array) shouldEqual "ala worl"
+
+    numRead = inputStream.read(buf)
+    numRead shouldEqual 2
+    new String(buf.array) shouldEqual "d!\0\0\0\0\0\0"
+  }
 }
