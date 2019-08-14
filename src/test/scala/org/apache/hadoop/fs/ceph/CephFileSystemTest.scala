@@ -105,10 +105,10 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.getRadosObjectName(new Path("/dir/object")) shouldEqual "dir/object"
   }
 
-  "listStatus('ceph://test-bucket/')" should "contains FileStatus{path=ceph://test-bucket/hello.txt}" in {
-    val statusList = fs.listStatus(new Path("ceph://test-bucket/"))
-    statusList should contain(fs.getFileStatus(new Path("hello.txt")))
-  }
+  //  "listStatus('ceph://test-bucket/')" should "contains FileStatus{path=ceph://test-bucket/hello.txt}" in {
+  //    val statusList = fs.listStatus(new Path("ceph://test-bucket/"))
+  //    statusList should contain(fs.getFileStatus(new Path("hello.txt")))
+  //  }
 
   "listStatus('ceph://test-bucket/hello.txt')" should "contains FileStatus{path=ceph://test-bucket/hello.txt}" in {
     val statusList = fs.listStatus(new Path("ceph://test-bucket/hello.txt"))
@@ -183,5 +183,31 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     readString shouldEqual "hello scala world!\n"
   }
 
-  """isDirectory(new Path(""))"""
+  """isDirectory(new Path("empty-dir/"))""" should "return true" in {
+    fs.isDirectory(new Path("empty-dir/")) shouldEqual true
+  }
+
+  """isDirectory(new Path("mochi-dir/"))""" should "return true" in {
+    fs.isDirectory(new Path("mochi-dir/")) shouldEqual true
+  }
+
+  """isDirectory(new Path("not-exist-dir/"))""" should "return false" in {
+    fs.isDirectory(new Path("not-exist-dir/")) shouldEqual false
+  }
+
+  """isDirectory(new Path("mochi-dir/mochi1"))""" should "return false" in {
+    fs.isDirectory(new Path("mochi-dir/mochi1")) shouldEqual false
+  }
+
+  """isFile(new Path("mochi-dir/mochi1"))""" should "return true" in {
+    fs.isFile(new Path("mochi-dir/mochi1")) shouldEqual true
+  }
+
+  """isFile(new Path("mochi-dir/"))""" should "return false" in {
+    fs.isFile(new Path("mochi-dir/")) shouldEqual false
+  }
+
+  """isFile(new Path("not-exist-file"))""" should "return false" in {
+    fs.isFile(new Path("not-exist-file")) shouldEqual false
+  }
 }

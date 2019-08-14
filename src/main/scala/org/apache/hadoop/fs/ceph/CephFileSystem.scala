@@ -126,6 +126,46 @@ class CephFileSystem extends FileSystem {
   }
 
   /**
+   * Copies Path src to Path dst.
+   *
+   * @param src path to be copied
+   * @param dst new path after copy
+   */
+  @throws[IOException]
+  private def copy(src: Path, dst: Path): Unit = {
+    val readObjectName: String = getRadosObjectName(src)
+    val writeObjectName: String = getRadosObjectName(dst)
+
+    val buf = ByteBuffer.allocate(defaultBufferSize)
+    val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
+    val readChannel = new CephReadChannel(ioCtx, readObjectName, defaultBufferSize)
+    val writeChannel = new CephWriteChannel(ioCtx, writeObjectName, defaultBufferSize)
+
+    try {
+      // throw RadosNotFoundException if the object does not exist
+      ioCtx.stat(writeObjectName)
+
+      // if dst file already exist stop the process
+      ioCtx.close()
+      throw new IOException(s"dest file '${writeObjectName}' already exists")
+    } catch {
+      case _: RadosNotFoundException => ()
+    }
+
+    try {
+      var numRead = -1
+      while (numRead != 0) {
+        numRead = readChannel.read(buf)
+        buf.flip
+        writeChannel.write(buf)
+        buf.clear
+      }
+    } finally {
+      ioCtx.close()
+    }
+  }
+
+  /**
    * Create a Rados object name from Path
    *
    * @param path relative or absolute path i.e. <code>Path("/dir/object-name")</code>
@@ -198,6 +238,32 @@ class CephFileSystem extends FileSystem {
   }
 
   /**
+   * True iff the named path is a directory.
+   * Note: Avoid using this method. Instead reuse the FileStatus
+   * returned by getFileStatus() or listStatus() methods.
+   *
+   * @param path path to check
+   * @throws IOException IO failure
+   */
+  @throws[IOException]
+  override def isDirectory(path: Path): Boolean = {
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
+    val objectName: String = getRadosObjectName(path)
+    val directoryName: String = s"${objectName}/"
+
+    try {
+      ioCtx.stat(directoryName) // throw RadosNotFoundException if not exist
+      true
+    }
+    catch {
+      case e: RadosNotFoundException => false
+    }
+    finally {
+      ioCtx.close()
+    }
+  }
+
+  /**
    * Get the current working directory for the given FileSystem
    *
    * @return the directory pathname
@@ -232,42 +298,26 @@ class CephFileSystem extends FileSystem {
     true
   }
 
-  /**
-   * Copies Path src to Path dst.
+  /** True iff the named path is a regular file.
+   * Note: Avoid using this method. Instead reuse the FileStatus
+   * returned by {@link #getFileStatus(Path)} or listStatus() methods.
    *
-   * @param src path to be copied
-   * @param dst new path after copy
+   * @param path path to check
+   * @throws IOException IO failure
    */
   @throws[IOException]
-  private def copy(src: Path, dst: Path): Unit = {
-    val readObjectName: String = getRadosObjectName(src)
-    val writeObjectName: String = getRadosObjectName(dst)
-
-    val buf = ByteBuffer.allocate(defaultBufferSize)
-    val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
-    val readChannel = new CephReadChannel(ioCtx, readObjectName, defaultBufferSize)
-    val writeChannel = new CephWriteChannel(ioCtx, writeObjectName, defaultBufferSize)
+  override def isFile(path: Path): Boolean = {
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
+    val objectName: String = getRadosObjectName(path)
 
     try {
-      // throw RadosNotFoundException if the object does not exist
-      ioCtx.stat(writeObjectName)
-
-      // if dst file already exist stop the process
-      ioCtx.close()
-      throw new IOException(s"dest file '${writeObjectName}' already exists")
-    } catch {
-      case _: RadosNotFoundException => ()
+      ioCtx.stat(objectName) // throw RadosNotFoundException if not exist
+      true
     }
-
-    try {
-      var numRead = -1
-      while (numRead != 0) {
-        numRead = readChannel.read(buf)
-        buf.flip
-        writeChannel.write(buf)
-        buf.clear
-      }
-    } finally {
+    catch {
+      case e: RadosNotFoundException => false
+    }
+    finally {
       ioCtx.close()
     }
   }
