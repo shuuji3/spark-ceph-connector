@@ -31,6 +31,7 @@ class CephReadChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extends
     val length = dst.remaining()
     val buf = ByteBuffer.allocate(length)
     val numRead = ioCtx.read(objectName, length, position, buf.array)
+    buf.limit(numRead)
     dst.put(buf)
     if (numRead > 0) {
       position(position + numRead)

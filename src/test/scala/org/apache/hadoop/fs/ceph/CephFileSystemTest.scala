@@ -9,7 +9,24 @@ import org.scalatest._
 class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
 
   val fs = new CephFileSystem()
-  fs.setConf(new Configuration)
+
+  before {
+    fs.setConf(new Configuration)
+
+    // Prepare 'hello.txt' for test
+    fs.delete(new Path("ceph://test-bucket/hello.txt"), recursive = false)
+    val hello = fs.create(new Path("ceph://test-bucket/hello.txt"))
+    hello.write("hello scala world!\n".map(_.toByte).toArray)
+
+    // val out = fs.create(new Path("ceph://test-bucket/mochi"))
+    // out.write("mochi".map(_.toByte).toArray)
+  }
+
+  after {
+    fs.delete(new Path("ceph://test-bucket/hello.txt"), recursive = false)
+
+    // fs.delete(new Path("ceph://test-bucket/mochi"), false)
+  }
 
   "getScheme" should "return 'ceph' scheme" in {
     fs.getScheme shouldEqual "ceph"
@@ -109,20 +126,61 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     statusList.length shouldEqual 0
   }
 
-  "open(new Path(\"hello.txt\"))" should "read string 'hello scala world!'" in {
+  "open(new Path(\"hello.txt\"))" should "read string '**hello sc**ala world!' when 8 byte read" in {
     val inputStream = fs.open(new Path("hello.txt"))
     val buf = new Array[Byte](8)
 
+    val numRead = inputStream.read(buf)
+    numRead shouldEqual 8
+    new String(buf.array) shouldEqual "hello sc"
+  }
+
+  "open(new Path(\"hello.txt\"))" should "read string 'hello sc**ala worl**d!' when 8 byte read" in {
+    val inputStream = fs.open(new Path("hello.txt"))
+    inputStream.seek(8)
+    val buf = new Array[Byte](8)
+
+    val numRead = inputStream.read(buf)
+    numRead shouldEqual 8
+    new String(buf.array) shouldEqual "ala worl"
+  }
+
+  "open(new Path(\"hello.txt\"))" should "read string 'hello scala worl**d!**' when 8 byte read" in {
+    val inputStream = fs.open(new Path("hello.txt"))
+    inputStream.seek(16)
+    val buf = new Array[Byte](8)
+
+    val numRead = inputStream.read(buf)
+    numRead shouldEqual 3
+    new String(buf.array) shouldEqual "d!\n\0\0\0\0\0"
+  }
+
+  "open(new Path(\"hello.txt\"))" should "read string 'hello scala world!'" in {
+    val inputStream = fs.open(new Path("hello.txt"))
+    inputStream.seek(0)
+    val buf = new Array[Byte](8)
+
+    var totalRead = 0
+    var readString = ""
     var numRead = inputStream.read(buf)
+    totalRead += numRead
+    readString += new String(buf.array.slice(0, numRead))
     numRead shouldEqual 8
     new String(buf.array) shouldEqual "hello sc"
 
     numRead = inputStream.read(buf)
+    totalRead += numRead
+    readString += new String(buf.array.slice(0, numRead))
     numRead shouldEqual 8
     new String(buf.array) shouldEqual "ala worl"
 
     numRead = inputStream.read(buf)
+    totalRead += numRead
+    readString += new String(buf.array.slice(0, numRead))
     numRead shouldEqual 3
-    new String(buf.array) shouldEqual "d!\n\0\0\0\0\0"
+    new String(buf.array.slice(0, numRead)) shouldEqual "d!\n"
+
+    totalRead shouldEqual 19
+    readString shouldEqual "hello scala world!\n"
   }
 }
