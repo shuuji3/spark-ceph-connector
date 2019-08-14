@@ -71,7 +71,7 @@ class CephWriteChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extend
     try {
       ioCtx.write(objectName, buf.array, position)
     } catch {
-      case e: RadosException => throw new IOException(e.getMessage)
+      case e: RadosException => throw e
       case e: IllegalArgumentException => throw new IndexOutOfBoundsException(e.getMessage)
     }
     position(position + length)
