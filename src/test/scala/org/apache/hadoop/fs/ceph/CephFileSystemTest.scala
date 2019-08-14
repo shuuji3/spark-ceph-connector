@@ -23,8 +23,7 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   after {
-    fs.delete(new Path("ceph://test-bucket/hello.txt"), recursive = false)
-
+    // fs.delete(new Path("ceph://test-bucket/hello.txt"), recursive = false)
     // fs.delete(new Path("ceph://test-bucket/mochi"), false)
   }
 
@@ -183,4 +182,6 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     totalRead shouldEqual 19
     readString shouldEqual "hello scala world!\n"
   }
+
+  """isDirectory(new Path(""))"""
 }

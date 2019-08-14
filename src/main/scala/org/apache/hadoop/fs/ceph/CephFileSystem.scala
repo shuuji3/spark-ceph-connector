@@ -47,33 +47,6 @@ class CephFileSystem extends FileSystem {
   }
 
   /**
-   * Delete a file.
-   *
-   * @param path      the path to delete.
-   * @param recursive if path is a directory and set to
-   *                  true, the directory is deleted else throws an exception. In
-   *                  case of a file the recursive can be set to either true or false.
-   * @return true if delete is successful else false.
-   * @throws IOException IO failure
-   */
-  @throws[IOException]
-  override def delete(path: Path, recursive: Boolean): Boolean = {
-    // TODO: handle the recursive param
-
-    val objectName = getRadosObjectName(path)
-    val ioCtx = cluster.ioCtxCreate(rootBucket)
-    try {
-      ioCtx.remove(objectName)
-      true
-    } catch {
-      case e: RadosNotFoundException => false
-      case e: Throwable => throw new IOException
-    } finally {
-      ioCtx.close()
-    }
-  }
-
-  /**
    * Create an FSDataOutputStream at the indicated Path with write-progress
    * reporting.
    *
@@ -126,40 +99,27 @@ class CephFileSystem extends FileSystem {
   }
 
   /**
-   * Copies Path src to Path dst.
+   * Delete a file.
    *
-   * @param src path to be copied
-   * @param dst new path after copy
+   * @param path      the path to delete.
+   * @param recursive if path is a directory and set to
+   *                  true, the directory is deleted else throws an exception. In
+   *                  case of a file the recursive can be set to either true or false.
+   * @return true if delete is successful else false.
+   * @throws IOException IO failure
    */
   @throws[IOException]
-  private def copy(src: Path, dst: Path): Unit = {
-    val readObjectName: String = getRadosObjectName(src)
-    val writeObjectName: String = getRadosObjectName(dst)
+  override def delete(path: Path, recursive: Boolean): Boolean = {
+    // TODO: handle the recursive param
 
-    val buf = ByteBuffer.allocate(defaultBufferSize)
-    val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
-    val readChannel = new CephReadChannel(ioCtx, readObjectName, defaultBufferSize)
-    val writeChannel = new CephWriteChannel(ioCtx, writeObjectName, defaultBufferSize)
-
+    val objectName = getRadosObjectName(path)
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
-      // throw RadosNotFoundException if the object does not exist
-      ioCtx.stat(writeObjectName)
-
-      // if dst file already exist stop the process
-      ioCtx.close()
-      throw new IOException(s"dest file '${writeObjectName}' already exists")
+      ioCtx.remove(objectName)
+      true
     } catch {
-      case _: RadosNotFoundException => ()
-    }
-
-    try {
-      var numRead = -1
-      while (numRead != 0) {
-        numRead = readChannel.read(buf)
-        buf.flip
-        writeChannel.write(buf)
-        buf.clear
-      }
+      case e: RadosNotFoundException => false
+      case e: Throwable => throw new IOException
     } finally {
       ioCtx.close()
     }
@@ -214,11 +174,11 @@ class CephFileSystem extends FileSystem {
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
       val absolutePath: Path = fixRelativePart(path)
-      val objectName = getRadosObjectName(absolutePath)
+      val objectName = getRadosObjectName(path)
       val stat = ioCtx.stat(objectName)
       new FileStatus(
         stat.getSize,
-        false,
+        isDirectory(absolutePath),
         getDefaultReplication(absolutePath),
         getDefaultBlockSize(absolutePath),
         stat.getMtime,
@@ -229,9 +189,9 @@ class CephFileSystem extends FileSystem {
         absolutePath
       )
     } catch {
-      case e: RadosNotFoundException => throw new FileNotFoundException
+      case e: RadosNotFoundException => throw new FileNotFoundException(e.getMessage)
       case e: Throwable =>
-        throw new IOException
+        throw new IOException(e)
     } finally {
       ioCtx.close()
     }
@@ -267,7 +227,48 @@ class CephFileSystem extends FileSystem {
    * @throws IOException IO failure
    */
   @throws[IOException]
-  override def mkdirs(f: Path, permission: FsPermission): Boolean = true
+  override def mkdirs(f: Path, permission: FsPermission): Boolean = {
+    // TODO: implement with directory object
+    true
+  }
 
-  // TODO: implement with directory object
+  /**
+   * Copies Path src to Path dst.
+   *
+   * @param src path to be copied
+   * @param dst new path after copy
+   */
+  @throws[IOException]
+  private def copy(src: Path, dst: Path): Unit = {
+    val readObjectName: String = getRadosObjectName(src)
+    val writeObjectName: String = getRadosObjectName(dst)
+
+    val buf = ByteBuffer.allocate(defaultBufferSize)
+    val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
+    val readChannel = new CephReadChannel(ioCtx, readObjectName, defaultBufferSize)
+    val writeChannel = new CephWriteChannel(ioCtx, writeObjectName, defaultBufferSize)
+
+    try {
+      // throw RadosNotFoundException if the object does not exist
+      ioCtx.stat(writeObjectName)
+
+      // if dst file already exist stop the process
+      ioCtx.close()
+      throw new IOException(s"dest file '${writeObjectName}' already exists")
+    } catch {
+      case _: RadosNotFoundException => ()
+    }
+
+    try {
+      var numRead = -1
+      while (numRead != 0) {
+        numRead = readChannel.read(buf)
+        buf.flip
+        writeChannel.write(buf)
+        buf.clear
+      }
+    } finally {
+      ioCtx.close()
+    }
+  }
 }
