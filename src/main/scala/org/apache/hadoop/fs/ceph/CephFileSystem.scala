@@ -70,6 +70,17 @@ class CephFileSystem extends FileSystem {
   }
 
   /**
+   * Create a Rados object name from Path
+   *
+   * @param path relative or absolute path i.e. <code>Path("/dir/object-name")</code>
+   * @return rados object name i.e. <code>dir/object-name</code>
+   */
+  def getRadosObjectName(path: Path): String = {
+    val objectPath: String = fixRelativePart(path).toUri.getPath
+    "^/".r.replaceFirstIn(objectPath, "") // Remove prefix '/'
+  }
+
+  /**
    * Append to an existing file (optional operation).
    *
    * @param f          the existing file to be appended.
@@ -163,17 +174,6 @@ class CephFileSystem extends FileSystem {
     } finally {
       ioCtx.close()
     }
-  }
-
-  /**
-   * Create a Rados object name from Path
-   *
-   * @param path relative or absolute path i.e. <code>Path("/dir/object-name")</code>
-   * @return rados object name i.e. <code>dir/object-name</code>
-   */
-  def getRadosObjectName(path: Path): String = {
-    val objectPath: String = fixRelativePart(path).toUri.getPath
-    "^/".r.replaceFirstIn(objectPath, "") // Remove prefix '/'
   }
 
   /**
@@ -298,6 +298,18 @@ class CephFileSystem extends FileSystem {
   override def mkdirs(f: Path, permission: FsPermission): Boolean = {
     // TODO: implement with directory object
     true
+  }
+
+  /**
+   * Make directory parts of all the descending directories for <code>mkdirs()</code>.
+   *
+   * When Array(dir1, dir2, dir3) is given, returns Array(dir1, dir1/dir2, dir1/dir2/dir3)
+   *
+   * @param dirs directory name lists to make
+   * @return
+   */
+  def createDirParts(dirs: Array[String]): Array[String] = {
+    if (dirs.isEmpty) new Array[String](0) else createDirParts(dirs.init) :+ dirs.mkString("/") + "/"
   }
 
   /** True iff the named path is a regular file.
