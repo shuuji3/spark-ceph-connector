@@ -93,6 +93,24 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     }
   }
 
+  // check for isDirectory of FileStatus
+  """fs.getFileStatus(new Path("mochi-dir/")).isDirectory""" should "return true" in {
+    fs.getFileStatus(new Path("mochi-dir/")).isDirectory shouldEqual true
+  }
+
+  """fs.getFileStatus(new Path("mochi-dir/mochi3")).isDirectory""" should "return false" in {
+    fs.getFileStatus(new Path("mochi-dir/mochi3")).isDirectory shouldEqual false
+  }
+
+  // check for isFile of FileStatus
+  """fs.getFileStatus(new Path("mochi-dir/")).isFile""" should "return false" in {
+    fs.getFileStatus(new Path("mochi-dir/")).isFile shouldEqual false
+  }
+
+  """fs.getFileStatus(new Path("mochi-dir/mochi3")).isFile""" should "return true" in {
+    fs.getFileStatus(new Path("mochi-dir/mochi3")).isFile shouldEqual true
+  }
+
   "getRadosObjectName(new Path('ceph://bucket-test/dir/object')" should "return dir/object" in {
     fs.getRadosObjectName(new Path("ceph://bucket-name/dir/object")) shouldEqual "dir/object"
   }

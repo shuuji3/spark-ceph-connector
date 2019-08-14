@@ -214,11 +214,13 @@ class CephFileSystem extends FileSystem {
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
       val absolutePath: Path = fixRelativePart(path)
-      val objectName = getRadosObjectName(path)
-      val stat = ioCtx.stat(objectName)
+      val isDir: Boolean = isDirectory(absolutePath)
+      val objectName: String = getRadosObjectName(path)
+      val fileName: String = if (isDir) objectName + "/" else objectName
+      val stat = ioCtx.stat(fileName)
       new FileStatus(
         stat.getSize,
-        isDirectory(absolutePath),
+        isDir,
         getDefaultReplication(absolutePath),
         getDefaultBlockSize(absolutePath),
         stat.getMtime,
