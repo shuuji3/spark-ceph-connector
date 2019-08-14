@@ -290,14 +290,35 @@ class CephFileSystem extends FileSystem {
    * directories. Has roughly the semantics of Unix @{code mkdir -p}.
    * Existence of the directory hierarchy is not an error.
    *
-   * @param f          path to create
+   * @param path       path to create
    * @param permission to apply to f
    * @throws IOException IO failure
    */
   @throws[IOException]
-  override def mkdirs(f: Path, permission: FsPermission): Boolean = {
-    // TODO: implement with directory object
-    true
+  override def mkdirs(path: Path, permission: FsPermission): Boolean = {
+    val directoryName = getRadosObjectName(path)
+    val dirParts = createDirParts(directoryName.split("/"))
+    if (checkIfAnyFileExists(dirParts)) {
+      false
+    } else {
+      val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
+      dirParts.foreach(dirPart => mkdir(ioCtx, dirPart))
+      true
+    }
+  }
+
+  /**
+   * Make the given file and all non-existent parents into
+   * directories. Has roughly the semantics of Unix @{code mkdir -p}.
+   * Existence of the directory hierarchy is not an error.
+   *
+   * @param ioCtx   connection to the pool
+   * @param dirName directory name to mkdir i.e. dir1/dir2/
+   * @throws IOException IO failure
+   */
+  @throws[IOException]
+  def mkdir(ioCtx: IoCTX, dirName: String): Unit = {
+    ioCtx.write(dirName, "")
   }
 
   /**
@@ -314,6 +335,22 @@ class CephFileSystem extends FileSystem {
     } else {
       createDirParts(dirs.init) :+ dirs.mkString("", "/", "/")
     }
+  }
+
+  /**
+   * Check if not existing any file in dirs to create directory.
+   * If dirParts is empty, return false.
+   *
+   * i.e.
+   * Array(dir1/, dir1/dir2/) => false
+   * Array(dir1/, dir1/object1) => true
+   * Array() => false
+   *
+   * @param dirParts directory list to check
+   * @return true if there is any file in all the path in dirParts
+   */
+  def checkIfAnyFileExists(dirParts: Array[String]): Boolean = {
+    dirParts.exists(dirPart => isFile(new Path(dirPart)))
   }
 
   /** True iff the named path is a regular file.
