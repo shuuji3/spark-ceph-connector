@@ -233,4 +233,19 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     val dirs = "dir1/dir2/dir3".split("/")
     fs.createDirParts(dirs) shouldEqual Array[String]("dir1/", "dir1/dir2/", "dir1/dir2/dir3/")
   }
+
+  "checkIfAnyFileExists(Array(empty-dir/, mochi-dir/))" should "return false" in {
+    val dirs = Array[String]("empty-dir/", "mochi-dir/")
+    fs.checkIfAnyFileExists(dirs) shouldEqual false
+  }
+
+  "checkIfAnyFileExists(Array(empty-dir/, mochi-dir/mochi3))" should "return true" in {
+    val dirs = Array[String]("empty-dir/", "mochi-dir/mochi3")
+    fs.checkIfAnyFileExists(dirs) shouldEqual true
+  }
+
+  "checkIfAnyFileExists(Array())" should "return false" in {
+    val dirs = Array[String]()
+    fs.checkIfAnyFileExists(dirs) shouldEqual false
+  }
 }
