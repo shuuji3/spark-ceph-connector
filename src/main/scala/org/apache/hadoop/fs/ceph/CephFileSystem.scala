@@ -309,7 +309,11 @@ class CephFileSystem extends FileSystem {
    * @return
    */
   def createDirParts(dirs: Array[String]): Array[String] = {
-    if (dirs.isEmpty) new Array[String](0) else createDirParts(dirs.init) :+ dirs.mkString("/") + "/"
+    if (dirs.isEmpty) {
+      new Array[String](0)
+    } else {
+      createDirParts(dirs.init) :+ dirs.mkString("", "/", "/")
+    }
   }
 
   /** True iff the named path is a regular file.
