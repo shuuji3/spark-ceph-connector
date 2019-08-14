@@ -1,6 +1,6 @@
 import Dependencies._
 
-ThisBuild / scalaVersion     := "2.12.8"
+ThisBuild / scalaVersion     := "2.11.12" // for Apache Spark v2.4.3
 ThisBuild / version          := "0.1.0-SNAPSHOT"
 ThisBuild / organization     := "com.example"
 ThisBuild / organizationName := "example"
@@ -28,10 +28,10 @@ lazy val root = (project in file("."))
 // Uncomment the following for publishing to Sonatype.
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for more detail.
 
-ThisBuild / description := "spark-ceph-connector"
+ThisBuild / description  := "spark-ceph-connector"
  ThisBuild / licenses    := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
  ThisBuild / homepage    := Some(url("https://github.com/shuuji3/spark-ceph-connector"))
- ThisBuild / scmInfo := Some(
+ ThisBuild / scmInfo     := Some(
    ScmInfo(
      url("https://github.com/shuuji3/spark-ceph-connector"),
      "scm:git@github.com:shuuji3/spark-ceph-connector.git"
