@@ -2,6 +2,7 @@ package org.apache.hadoop.fs.ceph
 
 import java.io.{File, FileNotFoundException, IOException}
 import java.net.URI
+import java.nio.ByteBuffer
 
 import com.ceph.rados.exceptions.RadosNotFoundException
 import com.ceph.rados.{IoCTX, Rados}
@@ -12,11 +13,12 @@ import org.apache.hadoop.util.Progressable
 class CephFileSystem extends FileSystem {
   // Connect to a Ceph cluster
   val cluster: Rados = new Rados("admin")
+  val defaultBufferSize: Int = 4 * 1024
   var rootBucket: String = "test-bucket" // TODO: Change temporary definition
   var confFilePath: String = "/home/shuuji3/ceph-cluster/ceph.conf"
-  var workingDirectory: Path = getFileSystemRoot
   cluster.confReadFile(new File(confFilePath))
   cluster.connect()
+  var workingDirectory: Path = getFileSystemRoot
 
   /**
    * Returns a URI which identifies this FileSystem.
@@ -118,7 +120,50 @@ class CephFileSystem extends FileSystem {
    * @throws IOException on failure
    */
   @throws[IOException]
-  override def rename(src: Path, dst: Path): Boolean = false
+  override def rename(src: Path, dst: Path): Boolean = {
+    copy(src, dst)
+    delete(src, recursive = false)
+  }
+
+  /**
+   * Copies Path src to Path dst.
+   *
+   * @param src path to be copied
+   * @param dst new path after copy
+   */
+  @throws[IOException]
+  private def copy(src: Path, dst: Path): Unit = {
+    val readObjectName: String = getRadosObjectName(src)
+    val writeObjectName: String = getRadosObjectName(dst)
+
+    val buf = ByteBuffer.allocate(defaultBufferSize)
+    val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
+    val readChannel = new CephReadChannel(ioCtx, readObjectName, defaultBufferSize)
+    val writeChannel = new CephWriteChannel(ioCtx, writeObjectName, defaultBufferSize)
+
+    try {
+      // throw RadosNotFoundException if the object does not exist
+      ioCtx.stat(writeObjectName)
+
+      // if dst file already exist stop the process
+      ioCtx.close()
+      throw new IOException(s"dest file '${writeObjectName}' already exists")
+    } catch {
+      case _: RadosNotFoundException => ()
+    }
+
+    try {
+      var numRead = -1
+      while (numRead != 0) {
+        numRead = readChannel.read(buf)
+        buf.flip
+        writeChannel.write(buf)
+        buf.clear
+      }
+    } finally {
+      ioCtx.close()
+    }
+  }
 
   /**
    * Create a Rados object name from Path
@@ -222,5 +267,7 @@ class CephFileSystem extends FileSystem {
    * @throws IOException IO failure
    */
   @throws[IOException]
-  override def mkdirs(f: Path, permission: FsPermission): Boolean = false
+  override def mkdirs(f: Path, permission: FsPermission): Boolean = true
+
+  // TODO: implement with directory object
 }
