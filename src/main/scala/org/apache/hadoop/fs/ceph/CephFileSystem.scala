@@ -271,16 +271,13 @@ class CephFileSystem extends FileSystem {
   @throws[FileNotFoundException]
   @throws[IOException]
   override def listStatus(path: Path): Array[FileStatus] = {
-    val radosName = getRadosObjectName(path) // i.e. dir1/object-name
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
       if (isFile(path)) {
-        Array[FileStatus](getFileStatus(new Path(radosName)))
-      } else if (isDirectory(path)) {
-        val objectNames = ioCtx.listObjects()
-        objectNames
-          .filter(_.startsWith(radosName)) // TODO: need check dir name properly
-          .map(objectName => getFileStatus(new Path(objectName)))
+        Array[FileStatus](getFileStatus(path))
+      } else if (isDirectory(path) || isBucketRoot(path)) {
+        val allDescendantObjectNames = getAllDescendantRadosObjectNames(path)
+        allDescendantObjectNames.map(objectName => getFileStatus(new Path(objectName)))
       } else {
         throw new FileNotFoundException(s"listStatus: ${path} not found")
       }

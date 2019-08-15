@@ -123,6 +123,7 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     "contains FileStatus{path=ceph://test-bucket/hello.txt} and its length = 1" in {
     val statusList = fs.listStatus(new Path("ceph://test-bucket/hello.txt"))
     statusList should contain(fs.getFileStatus(new Path("hello.txt")))
+    statusList(0).isFile shouldEqual true
     statusList.length shouldEqual 1
   }
 
@@ -135,17 +136,34 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
 
   "listStatus('dummy-file')" should "throw FileNotFoundException" in {
     intercept[FileNotFoundException] {
-      val statusList = fs.listStatus(new Path("no-exist-file"))
+      fs.listStatus(new Path("no-exist-file"))
     }
   }
 
-  // TODO: test directory
+  "listStatus('empty-dir')" should
+    "contains FileStatus{path=ceph://test-bucket/empty-dir} and its length = 1" in {
+    val statusList = fs.listStatus(new Path("empty-dir"))
+    statusList should contain(fs.getFileStatus(new Path("empty-dir")))
+    statusList(0).isDirectory shouldEqual true
+    statusList.length shouldEqual 1
+  }
 
-  // TODO: test bucket root
-  //  "listStatus('ceph://test-bucket/')" should "contains FileStatus{path=ceph://test-bucket/hello.txt}" in {
-  //    val statusList = fs.listStatus(new Path("ceph://test-bucket/"))
-  //    statusList should contain(fs.getFileStatus(new Path("hello.txt")))
-  //  }
+  "listStatus('mochi-dir')" should
+    "contains FileStatus{path=ceph://test-bucket/mochi-dir} and its length = 4" in {
+    val statusList = fs.listStatus(new Path("mochi-dir"))
+    statusList should contain(fs.getFileStatus(new Path("mochi-dir")))
+    statusList.count(_.isFile) shouldEqual 3
+    statusList.length shouldEqual 4
+  }
+
+    "listStatus('ceph://test-bucket/') (bucket root)" should
+      "contains FileStatus{hello.txt, mochi-dir/mochi3, empty-dir/} and more than 7 objects" in {
+      val statusList = fs.listStatus(new Path("ceph://test-bucket/"))
+      statusList should contain(fs.getFileStatus(new Path("hello.txt")))
+      statusList should contain(fs.getFileStatus(new Path("mochi-dir/mochi3")))
+      statusList should contain(fs.getFileStatus(new Path("empty-dir/")))
+      statusList.length should (be >= 7)
+    }
 
   "open(new Path(\"hello.txt\"))" should "read string '**hello sc**ala world!' when 8 byte read" in {
     val inputStream = fs.open(new Path("hello.txt"))
