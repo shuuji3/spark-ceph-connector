@@ -118,25 +118,33 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.getRadosObjectName(new Path("/dir/object")) shouldEqual "dir/object"
   }
 
+  "listStatus('ceph://test-bucket/hello.txt')" should
+    "contains FileStatus{path=ceph://test-bucket/hello.txt} and its length = 1" in {
+    val statusList = fs.listStatus(new Path("ceph://test-bucket/hello.txt"))
+    statusList should contain(fs.getFileStatus(new Path("hello.txt")))
+    statusList.length shouldEqual 1
+  }
+
+  "listStatus('ceph://test-bucket/world.txt')" should
+    "not contains FileStatus{path=ceph://test-bucket/hello.txt} and its length = 1" in {
+    val statusList = fs.listStatus(new Path("ceph://test-bucket/world.txt"))
+    statusList should not contain (fs.getFileStatus(new Path("hello.txt")))
+    statusList.length shouldEqual 1
+  }
+
+  "listStatus('dummy-file')" should "throw FileNotFoundException" in {
+    intercept[FileNotFoundException] {
+      val statusList = fs.listStatus(new Path("no-exist-file"))
+    }
+  }
+
+  // TODO: test directory
+
+  // TODO: test bucket root
   //  "listStatus('ceph://test-bucket/')" should "contains FileStatus{path=ceph://test-bucket/hello.txt}" in {
   //    val statusList = fs.listStatus(new Path("ceph://test-bucket/"))
   //    statusList should contain(fs.getFileStatus(new Path("hello.txt")))
   //  }
-
-  "listStatus('ceph://test-bucket/hello.txt')" should "contains FileStatus{path=ceph://test-bucket/hello.txt}" in {
-    val statusList = fs.listStatus(new Path("ceph://test-bucket/hello.txt"))
-    statusList should contain(fs.getFileStatus(new Path("hello.txt")))
-  }
-
-  "listStatus('ceph://test-bucket/world.txt')" should "not contains FileStatus{path=ceph://test-bucket/hello.txt}" in {
-    val statusList = fs.listStatus(new Path("ceph://test-bucket/world.txt"))
-    statusList should not contain (fs.getFileStatus(new Path("hello.txt")))
-  }
-
-  "listStatus('dummy-file')" should "not contains any FileStatus" in {
-    val statusList = fs.listStatus(new Path("dummy-file"))
-    statusList.length shouldEqual 0
-  }
 
   "open(new Path(\"hello.txt\"))" should "read string '**hello sc**ala world!' when 8 byte read" in {
     val inputStream = fs.open(new Path("hello.txt"))

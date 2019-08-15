@@ -263,8 +263,16 @@ class CephFileSystem extends FileSystem {
     val radosName = getRadosObjectName(path) // i.e. dir1/object-name
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
-      val objectNames = ioCtx.listObjects()
-      objectNames.filter(_.startsWith(radosName)).map(objectName => getFileStatus(new Path(objectName)))
+      if (isFile(path)) {
+        Array[FileStatus](getFileStatus(new Path(radosName)))
+      } else if (isDirectory(path)) {
+        val objectNames = ioCtx.listObjects()
+        objectNames
+          .filter(_.startsWith(radosName)) // TODO: need check dir name properly
+          .map(objectName => getFileStatus(new Path(objectName)))
+      } else {
+        throw new FileNotFoundException(s"listStatus: ${path} not found")
+      }
     } finally {
       ioCtx.close()
     }
