@@ -47,6 +47,17 @@ class CephFileSystem extends FileSystem {
   }
 
   /**
+   * Create a Rados object name from Path
+   *
+   * @param path relative or absolute path i.e. <code>Path("/dir/object-name")</code>
+   * @return rados object name i.e. <code>dir/object-name</code>
+   */
+  def getRadosObjectName(path: Path): String = {
+    val objectPath: String = fixRelativePart(path).toUri.getPath
+    "^/".r.replaceFirstIn(objectPath, "") // Remove prefix '/'
+  }
+
+  /**
    * Create an FSDataOutputStream at the indicated Path with write-progress
    * reporting.
    *
@@ -182,6 +193,67 @@ class CephFileSystem extends FileSystem {
     } finally {
       ioCtx.close()
     }
+  }
+
+  /**
+   * True iff the named path is a directory.
+   * Note: Avoid using this method. Instead reuse the FileStatus
+   * returned by getFileStatus() or listStatus() methods.
+   *
+   * @param path path to check
+   * @throws IOException IO failure
+   */
+  @throws[IOException]
+  override def isDirectory(path: Path): Boolean = {
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
+    val objectName: String = getRadosObjectName(path)
+    val directoryName: String = s"${objectName}/"
+
+    try {
+      ioCtx.stat(directoryName) // throw RadosNotFoundException if not exist
+      true
+    }
+    catch {
+      case e: RadosNotFoundException => false
+    }
+    finally {
+      ioCtx.close()
+    }
+  }
+
+  /** True iff the named path is a regular file.
+   * Note: Avoid using this method. Instead reuse the FileStatus
+   * returned by {@link #getFileStatus(Path)} or listStatus() methods.
+   *
+   * @param path path to check
+   * @throws IOException IO failure
+   */
+  @throws[IOException]
+  override def isFile(path: Path): Boolean = {
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
+    val objectName: String = getRadosObjectName(path)
+
+    try {
+      ioCtx.stat(objectName) // throw RadosNotFoundException if not exist
+      true
+    }
+    catch {
+      case e: RadosNotFoundException => false
+    }
+    finally {
+      ioCtx.close()
+    }
+  }
+
+  /**
+   * Check if the given path is the bucket root
+   *
+   * @param path the given path
+   * @return true if the path is bucket root
+   */
+  def isBucketRoot(path: Path): Boolean = {
+    path == new Path("/") ||
+      path == new Path("ceph://test-bucket/") // note: not "ceph://test-bucket"
   }
 
   /**
@@ -358,7 +430,7 @@ class CephFileSystem extends FileSystem {
     val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
     try {
       // Special case - bucket root
-      if (path == new Path("/")) {
+      if (isBucketRoot(path)) {
         ioCtx.listObjects()
       }
       else if (isFile(path)) {
@@ -375,67 +447,6 @@ class CephFileSystem extends FileSystem {
         throw new FileNotFoundException(s"${path} not exists")
       }
     } finally {
-      ioCtx.close()
-    }
-  }
-
-  /**
-   * True iff the named path is a directory.
-   * Note: Avoid using this method. Instead reuse the FileStatus
-   * returned by getFileStatus() or listStatus() methods.
-   *
-   * @param path path to check
-   * @throws IOException IO failure
-   */
-  @throws[IOException]
-  override def isDirectory(path: Path): Boolean = {
-    val ioCtx = cluster.ioCtxCreate(rootBucket)
-    val objectName: String = getRadosObjectName(path)
-    val directoryName: String = s"${objectName}/"
-
-    try {
-      ioCtx.stat(directoryName) // throw RadosNotFoundException if not exist
-      true
-    }
-    catch {
-      case e: RadosNotFoundException => false
-    }
-    finally {
-      ioCtx.close()
-    }
-  }
-
-  /**
-   * Create a Rados object name from Path
-   *
-   * @param path relative or absolute path i.e. <code>Path("/dir/object-name")</code>
-   * @return rados object name i.e. <code>dir/object-name</code>
-   */
-  def getRadosObjectName(path: Path): String = {
-    val objectPath: String = fixRelativePart(path).toUri.getPath
-    "^/".r.replaceFirstIn(objectPath, "") // Remove prefix '/'
-  }
-
-  /** True iff the named path is a regular file.
-   * Note: Avoid using this method. Instead reuse the FileStatus
-   * returned by {@link #getFileStatus(Path)} or listStatus() methods.
-   *
-   * @param path path to check
-   * @throws IOException IO failure
-   */
-  @throws[IOException]
-  override def isFile(path: Path): Boolean = {
-    val ioCtx = cluster.ioCtxCreate(rootBucket)
-    val objectName: String = getRadosObjectName(path)
-
-    try {
-      ioCtx.stat(objectName) // throw RadosNotFoundException if not exist
-      true
-    }
-    catch {
-      case e: RadosNotFoundException => false
-    }
-    finally {
       ioCtx.close()
     }
   }
