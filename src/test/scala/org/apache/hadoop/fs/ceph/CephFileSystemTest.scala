@@ -13,11 +13,6 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
   before {
     fs.setConf(new Configuration)
 
-    // Prepare 'hello.txt' for test
-    fs.delete(new Path("ceph://test-bucket/hello.txt"), recursive = false)
-    val hello = fs.create(new Path("ceph://test-bucket/hello.txt"))
-    hello.write("hello scala world!\n".map(_.toByte).toArray)
-
     // val out = fs.create(new Path("ceph://test-bucket/mochi"))
     // out.write("mochi".map(_.toByte).toArray)
   }
