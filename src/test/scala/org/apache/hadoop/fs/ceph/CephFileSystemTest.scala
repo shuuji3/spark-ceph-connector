@@ -5,6 +5,7 @@ import java.io.{FileNotFoundException, IOException}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.scalatest._
+import org.scalatest.matchers._
 
 class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
 
@@ -251,4 +252,35 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     val dirs = Array[String]()
     fs.checkIfAnyFileExists(dirs) shouldEqual false
   }
+
+  "getAllDescendantRadosObjectNames(hello.txt)" should
+    "return Array(hello.txt)" in {
+    fs.getAllDescendantRadosObjectNames(new Path("hello.txt")) shouldEqual Array("hello.txt")
+  }
+
+  "getAllDescendantRadosObjectNames(empty-dir)" should
+    "return Array(empty-dir/)" in {
+    fs.getAllDescendantRadosObjectNames(new Path("empty-dir/")) shouldEqual Array("empty-dir/")
+  }
+
+  "getAllDescendantRadosObjectNames(mochi-dir)" should
+    """contains "mochi-dir/" and "mochi-dir/mochi3"""" in {
+    val objectNames = fs.getAllDescendantRadosObjectNames(new Path("mochi-dir"))
+    objectNames.length shouldEqual 4
+    objectNames should contain("mochi-dir/")
+    objectNames should contain("mochi-dir/mochi3")
+  }
+
+  "getAllDescendantRadosObjectNames(/)" should
+    "return more than 7 objects (all the objects)" in {
+    fs.getAllDescendantRadosObjectNames(new Path("/")).length should (be >= 7)
+  }
+
+  "getAllDescendantRadosObjectNames(no-exist-file)" should
+    "return Array(no-exist-file)" in {
+    intercept[FileNotFoundException] {
+      fs.getAllDescendantRadosObjectNames(new Path("no-exist-file"))
+    }
+  }
+
 }
