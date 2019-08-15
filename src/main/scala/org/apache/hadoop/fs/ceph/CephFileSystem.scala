@@ -105,8 +105,27 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def rename(src: Path, dst: Path): Boolean = {
-    copy(src, dst)
-    delete(src, recursive = false)
+    // Check if dst exists
+    if (isFile(dst) || isDirectory(dst)) {
+      throw new IOException(s"${dst} already exists")
+    }
+
+    if (isFile(src)) {
+      copy(src, dst)
+      delete(src, recursive = false)
+      true
+    } else if (isDirectory(src)) {
+      // TODO: handle when the src is directory
+      //      val objectNames: Array[String] = getAllChildren(src) // TODO: dir1/ などの正しい文字列
+      //      objectNames.foreach(objectName => {
+      //        val newName = "".r.replaceFirstIn(objectName, newName)
+      //      })
+      //      copy(src, dst)
+      //      delete(src, recursive = true)
+      true
+    } else {
+      throw new IOException(s"${src} is neither a file nor a directory")
+    }
   }
 
   /**
@@ -177,6 +196,56 @@ class CephFileSystem extends FileSystem {
   }
 
   /**
+   * True iff the named path is a directory.
+   * Note: Avoid using this method. Instead reuse the FileStatus
+   * returned by getFileStatus() or listStatus() methods.
+   *
+   * @param path path to check
+   * @throws IOException IO failure
+   */
+  @throws[IOException]
+  override def isDirectory(path: Path): Boolean = {
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
+    val objectName: String = getRadosObjectName(path)
+    val directoryName: String = s"${objectName}/"
+
+    try {
+      ioCtx.stat(directoryName) // throw RadosNotFoundException if not exist
+      true
+    }
+    catch {
+      case e: RadosNotFoundException => false
+    }
+    finally {
+      ioCtx.close()
+    }
+  }
+
+  /** True iff the named path is a regular file.
+   * Note: Avoid using this method. Instead reuse the FileStatus
+   * returned by {@link #getFileStatus(Path)} or listStatus() methods.
+   *
+   * @param path path to check
+   * @throws IOException IO failure
+   */
+  @throws[IOException]
+  override def isFile(path: Path): Boolean = {
+    val ioCtx = cluster.ioCtxCreate(rootBucket)
+    val objectName: String = getRadosObjectName(path)
+
+    try {
+      ioCtx.stat(objectName) // throw RadosNotFoundException if not exist
+      true
+    }
+    catch {
+      case e: RadosNotFoundException => false
+    }
+    finally {
+      ioCtx.close()
+    }
+  }
+
+  /**
    * List the statuses of the files/directories in the given path if the path is
    * a directory.
    * <p>
@@ -235,32 +304,6 @@ class CephFileSystem extends FileSystem {
       case e: Throwable =>
         throw new IOException(e)
     } finally {
-      ioCtx.close()
-    }
-  }
-
-  /**
-   * True iff the named path is a directory.
-   * Note: Avoid using this method. Instead reuse the FileStatus
-   * returned by getFileStatus() or listStatus() methods.
-   *
-   * @param path path to check
-   * @throws IOException IO failure
-   */
-  @throws[IOException]
-  override def isDirectory(path: Path): Boolean = {
-    val ioCtx = cluster.ioCtxCreate(rootBucket)
-    val objectName: String = getRadosObjectName(path)
-    val directoryName: String = s"${objectName}/"
-
-    try {
-      ioCtx.stat(directoryName) // throw RadosNotFoundException if not exist
-      true
-    }
-    catch {
-      case e: RadosNotFoundException => false
-    }
-    finally {
       ioCtx.close()
     }
   }
@@ -351,29 +394,5 @@ class CephFileSystem extends FileSystem {
    */
   def checkIfAnyFileExists(dirParts: Array[String]): Boolean = {
     dirParts.exists(dirPart => isFile(new Path(dirPart)))
-  }
-
-  /** True iff the named path is a regular file.
-   * Note: Avoid using this method. Instead reuse the FileStatus
-   * returned by {@link #getFileStatus(Path)} or listStatus() methods.
-   *
-   * @param path path to check
-   * @throws IOException IO failure
-   */
-  @throws[IOException]
-  override def isFile(path: Path): Boolean = {
-    val ioCtx = cluster.ioCtxCreate(rootBucket)
-    val objectName: String = getRadosObjectName(path)
-
-    try {
-      ioCtx.stat(objectName) // throw RadosNotFoundException if not exist
-      true
-    }
-    catch {
-      case e: RadosNotFoundException => false
-    }
-    finally {
-      ioCtx.close()
-    }
   }
 }
