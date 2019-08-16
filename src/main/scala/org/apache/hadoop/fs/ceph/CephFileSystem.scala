@@ -81,6 +81,14 @@ class CephFileSystem extends FileSystem {
     } else if (isFile(path) && !overwrite) {
       throw new FileAlreadyExistsException(s"${path} is already exists and specified not to overwrite")
     }
+
+    // Make parent dirs
+    val parentPath = path.getParent
+    mkdirs(parentPath)
+
+    // Touch when create()
+    ioCtx.write(objectName, "")
+
     val out = new CephFSDataOutputStream(ioCtx, objectName, bufferSize)
     new FSDataOutputStream(out, null)
   }
