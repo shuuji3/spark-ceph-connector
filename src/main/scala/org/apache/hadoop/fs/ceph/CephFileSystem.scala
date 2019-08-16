@@ -116,7 +116,9 @@ class CephFileSystem extends FileSystem {
     }
 
     if (isFile(src)) {
-      copy(src, dst)
+      val readObjectName: String = getRadosObjectName(src)
+      val writeObjectName: String = getRadosObjectName(dst)
+      radosCopy(readObjectName, writeObjectName)
       delete(src, recursive = false)
       true
     } else if (isDirectory(src)) {
@@ -145,7 +147,6 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def delete(path: Path, recursive: Boolean): Boolean = {
-    // TODO: handle the recursive param
     if (isFile(path)) {
       val objectName = getRadosObjectName(path)
       radosDelete(objectName)
@@ -186,16 +187,12 @@ class CephFileSystem extends FileSystem {
   }
 
   /**
-   * Copies Path src to Path dst.
-   *
-   * @param src path to be copied
-   * @param dst new path after copy
+   * Copy RADOS object with new name.
+   * @param readObjectName objectName to be copied
+   * @param writeObjectName new objectName created
    */
   @throws[IOException]
-  private def copy(src: Path, dst: Path): Unit = {
-    val readObjectName: String = getRadosObjectName(src)
-    val writeObjectName: String = getRadosObjectName(dst)
-
+  def radosCopy(readObjectName: String, writeObjectName: String): Unit = {
     val buf = ByteBuffer.allocate(defaultBufferSize)
     val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
     val readChannel = new CephReadChannel(ioCtx, readObjectName, defaultBufferSize)

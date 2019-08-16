@@ -373,6 +373,33 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.exists(path2) shouldEqual false
   }
 
+  """rename("tmp-object", "tmp-object-copy")""" should "create the object to have the same content" in {
+    val path = new Path("tmp-object")
+    val newPath = new Path("tmp-object-copy")
+    fs.exists(path) shouldEqual false
+    fs.exists(newPath) shouldEqual false
+
+    // Create and copy object
+    val tmp = fs.create(path)
+    val content = "tmp-content".map(_.toByte).toArray
+    tmp.write(content)
+    fs.exists(path) shouldEqual true
+    fs.rename(path, newPath)
+    fs.exists(path) shouldEqual false
+    fs.exists(newPath) shouldEqual true
+
+    // Check content
+    val readObject = fs.open(newPath)
+    val buf = new Array[Byte](15)
+    val numRead = readObject.read(buf)
+    numRead shouldEqual 11
+    buf shouldEqual content ++ Array[Byte](0, 0, 0, 0)
+
+    // Delete object
+    fs.delete(newPath, recursive = false)
+    fs.exists(newPath) shouldEqual false
+  }
+
   """isDirectory(new Path("empty-dir/"))""" should "return true" in {
     fs.isDirectory(new Path("empty-dir/")) shouldEqual true
   }
@@ -470,5 +497,4 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
       fs.getAllDescendantRadosObjectNames(new Path("no-exist-file"))
     }
   }
-
 }
