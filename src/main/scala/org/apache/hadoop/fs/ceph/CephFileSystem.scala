@@ -156,7 +156,7 @@ class CephFileSystem extends FileSystem {
   @throws[IOException]
   override def delete(path: Path, recursive: Boolean): Boolean = {
     if (isFile(path)) {
-      val objectName = getRadosObjectName(path)
+      val objectName: String = getRadosObjectName(path)
       radosDelete(objectName)
     } else if (isDirectory(path)) {
       if (recursive) {
@@ -188,8 +188,7 @@ class CephFileSystem extends FileSystem {
       ioCtx.remove(objectName)
       true
     } catch {
-      case e: RadosNotFoundException => false
-      case e: Throwable => throw new IOException
+      case _: RadosNotFoundException => false
     } finally {
       ioCtx.close()
     }
@@ -249,11 +248,9 @@ class CephFileSystem extends FileSystem {
     try {
       ioCtx.stat(directoryName) // throw RadosNotFoundException if not exist
       true
-    }
-    catch {
-      case e: RadosNotFoundException => false
-    }
-    finally {
+    } catch {
+      case _: RadosNotFoundException => false
+    } finally {
       ioCtx.close()
     }
   }
@@ -273,11 +270,9 @@ class CephFileSystem extends FileSystem {
     try {
       ioCtx.stat(objectName) // throw RadosNotFoundException if not exist
       true
-    }
-    catch {
+    } catch {
       case e: RadosNotFoundException => false
-    }
-    finally {
+    } finally {
       ioCtx.close()
     }
   }
