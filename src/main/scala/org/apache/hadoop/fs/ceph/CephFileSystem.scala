@@ -79,7 +79,7 @@ class CephFileSystem extends FileSystem {
     val objectName = getRadosObjectName(path)
     if (isDirectory(path)) {
       throw new FileAlreadyExistsException(s"${path} is a directory")
-    } else if (isFile(path) && overwrite) {
+    } else if (isFile(path) && !overwrite) {
       throw new FileAlreadyExistsException(s"${path} is already exists and specified not to overwrite")
     }
     val out = new CephFSDataOutputStream(ioCtx, objectName, bufferSize)
