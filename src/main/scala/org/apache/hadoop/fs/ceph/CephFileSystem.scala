@@ -111,25 +111,25 @@ class CephFileSystem extends FileSystem {
   @throws[IOException]
   override def rename(src: Path, dst: Path): Boolean = {
     // Check if dst exists
-    if (isFile(dst) || isDirectory(dst)) {
+    if (exists(dst)) {
       throw new FileAlreadyExistsException(s"${dst} already exists")
     }
 
     if (isFile(src)) {
-      val readObjectName: String = getRadosObjectName(src)
-      val writeObjectName: String = getRadosObjectName(dst)
-      radosCopy(readObjectName, writeObjectName)
+      val srcObjectName: String = getRadosObjectName(src)
+      val dstObjectName: String = getRadosObjectName(dst)
+      radosCopy(srcObjectName, dstObjectName)
       delete(src, recursive = false)
-      true
     } else if (isDirectory(src)) {
-      // TODO: handle when the src is directory
-      //      val objectNames: Array[String] = getAllChildren(src) // TODO: dir1/ などの正しい文字列
-      //      objectNames.foreach(objectName => {
-      //        val newName = "".r.replaceFirstIn(objectName, newName)
-      //      })
-      //      copy(src, dst)
-      //      delete(src, recursive = true)
-      true
+      val directoryName = s"${getRadosObjectName(src)}/"
+      val newDirectoryName = s"${getRadosObjectName(dst)}/"
+
+      val objectNames: Array[String] = getAllDescendantRadosObjectNames(src)
+      objectNames.foreach(objectName => {
+        val newObjectName = s"^${directoryName}".r.replaceFirstIn(objectName, newDirectoryName)
+        radosCopy(objectName, newObjectName)
+      })
+      delete(src, recursive = true)
     } else {
       throw new IOException(s"${src} is neither a file nor a directory")
     }
@@ -188,7 +188,8 @@ class CephFileSystem extends FileSystem {
 
   /**
    * Copy RADOS object with new name.
-   * @param readObjectName objectName to be copied
+   *
+   * @param readObjectName  objectName to be copied
    * @param writeObjectName new objectName created
    */
   @throws[IOException]

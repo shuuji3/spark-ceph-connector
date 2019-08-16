@@ -400,6 +400,58 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.exists(newPath) shouldEqual false
   }
 
+  """rename("mochi-dir/", "new-mochi-dir/")""" should "copy the same objects" in {
+    val path = new Path("mochi-dir/")
+    val newPath = new Path("new-mochi-dir/")
+    fs.exists(path) shouldEqual true
+    fs.exists(newPath) shouldEqual false
+    fs.listStatus(path).length shouldEqual 4
+    fs.listStatus(path) should contain (fs.getFileStatus(new Path("mochi-dir/mochi3")))
+    fs.listStatus(path) should not contain (fs.getFileStatus(new Path("mochi-dir/nest/mochi4")))
+    intercept[FileNotFoundException] { fs.listStatus(newPath) }
+
+    // Rename mochi-dir/ and its children objects and a subdirectory
+    fs.rename(path, newPath)
+    fs.exists(path) shouldEqual false
+    fs.exists(newPath) shouldEqual true
+    intercept[FileNotFoundException] { fs.listStatus(path) }
+    fs.listStatus(newPath).length shouldEqual 4
+    fs.listStatus(newPath) should contain (fs.getFileStatus(new Path("new-mochi-dir/mochi3")))
+    fs.listStatus(newPath) should not contain (fs.getFileStatus(new Path("new-mochi-dir/nest/mochi4")))
+
+    // Revert the renaming
+    fs.rename(newPath, path)
+    fs.exists(path) shouldEqual true
+    fs.exists(newPath) shouldEqual false
+    fs.listStatus(path).length shouldEqual 4
+    fs.listStatus(path) should contain (fs.getFileStatus(new Path("mochi-dir/mochi3")))
+    fs.listStatus(path) should not contain (fs.getFileStatus(new Path("mochi-dir/nest/mochi4")))
+    intercept[FileNotFoundException] { fs.listStatus(newPath) }
+  }
+
+  """rename("empty-dir/", "new-empty-dir/")""" should "copy the same directory object" in {
+    val path = new Path("empty-dir/")
+    val newPath = new Path("new-empty-dir/")
+    fs.exists(path) shouldEqual true
+    fs.exists(newPath) shouldEqual false
+    fs.listStatus(path).length shouldEqual 0
+    intercept[FileNotFoundException] { fs.listStatus(newPath) }
+
+    // Rename mochi-dir/ and its children objects and a subdirectory
+    fs.rename(path, newPath)
+    fs.exists(path) shouldEqual false
+    fs.exists(newPath) shouldEqual true
+    intercept[FileNotFoundException] { fs.listStatus(path) }
+    fs.listStatus(newPath).length shouldEqual 0
+
+    // Revert the renaming
+    fs.rename(newPath, path)
+    fs.exists(path) shouldEqual true
+    fs.exists(newPath) shouldEqual false
+    fs.listStatus(path).length shouldEqual 0
+    intercept[FileNotFoundException] { fs.listStatus(newPath) }
+  }
+
   """isDirectory(new Path("empty-dir/"))""" should "return true" in {
     fs.isDirectory(new Path("empty-dir/")) shouldEqual true
   }
