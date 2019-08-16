@@ -76,6 +76,11 @@ class CephFileSystem extends FileSystem {
   override def create(path: Path, permission: FsPermission, overwrite: Boolean, bufferSize: Int, replication: Short, blockSize: Long, progress: Progressable): FSDataOutputStream = {
     val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
     val objectName = getRadosObjectName(path)
+    if (isDirectory(path)) {
+      throw new FileAlreadyExistsException(s"${path} is a directory")
+    } else if (isFile(path) && overwrite) {
+      throw new FileAlreadyExistsException(s"${path} is already exists and specified not to overwrite")
+    }
     val out = new CephFSDataOutputStream(ioCtx, objectName, bufferSize)
     new FSDataOutputStream(out, null)
   }
