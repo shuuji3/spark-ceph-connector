@@ -280,8 +280,7 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.exists(path) shouldEqual true
 
     // Delete object
-    val result = fs.radosDelete("tmp-object")
-    result shouldEqual true
+    fs.radosDelete("tmp-object") shouldEqual true
     fs.exists(path) shouldEqual false
   }
 
@@ -290,14 +289,68 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.exists(path) shouldEqual false
 
     // Create object
-    val tmp = fs.mkdirs(path)
+    fs.mkdirs(path) shouldEqual true
     fs.exists(path) shouldEqual true
     fs.isDirectory(path) shouldEqual true
 
     // Delete object
-    val result = fs.radosDelete("tmp-dir/")
-    result shouldEqual true
+    fs.radosDelete("tmp-dir/") shouldEqual true
     fs.exists(path) shouldEqual false
+  }
+
+  """delete("tmp-object")""" should "delete the object" in {
+    val path = new Path("tmp-object")
+    fs.exists(path) shouldEqual false
+
+    // Create object
+    val tmp = fs.create(path)
+    val content = "tmp-content".map(_.toByte).toArray
+    tmp.write(content)
+    fs.exists(path) shouldEqual true
+
+    // Delete object
+    fs.delete(path, recursive = false) shouldEqual true
+    fs.exists(path) shouldEqual false
+  }
+
+  """delete("tmp-dir/", recursive = true)""" should "delete directories recursively" in {
+    val path1 = new Path("tmp-dir")
+    val path2 = new Path("tmp-dir/dir2")
+    fs.exists(path1) shouldEqual false
+    fs.exists(path2) shouldEqual false
+
+    // Create directories
+    fs.mkdirs(path2) shouldEqual true
+    fs.exists(path1) shouldEqual true
+    fs.exists(path2) shouldEqual true
+    fs.isDirectory(path1) shouldEqual true
+    fs.isDirectory(path2) shouldEqual true
+
+    // Delete object
+    fs.delete(path1, recursive = true) shouldEqual true
+    fs.exists(path1) shouldEqual false
+    fs.exists(path2) shouldEqual false
+  }
+
+  """delete("no-exist-file")""" should "throw FileNotFoundException" in {
+    intercept[FileNotFoundException] {
+      fs.delete(new Path("no-exist-file"), recursive = false)
+    }
+  }
+
+  """delete("tmp-dir/", recursive = false)""" should "throw IOException because of the lack of recursive for dir" in {
+    val path = new Path("tmp-dir")
+    fs.exists(path) shouldEqual false
+
+    // Create directory
+    fs.mkdirs(path) shouldEqual true
+    fs.exists(path) shouldEqual true
+    fs.isDirectory(path) shouldEqual true
+
+    intercept[IOException] {
+      fs.delete(path, recursive = false)
+    }
+    fs.delete(path, recursive = true) shouldEqual true
   }
 
   """mkdirs("tmp-dir/dir2")""" should "create 2 directory objects" in {
@@ -314,10 +367,8 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.isDirectory(path2) shouldEqual true
 
     // Delete object
-    val result1 = fs.radosDelete("tmp-dir/")
-    val result2 = fs.radosDelete("tmp-dir/dir2/")
-    result1 shouldEqual true
-    result2 shouldEqual true
+    fs.radosDelete("tmp-dir/") shouldEqual true
+    fs.radosDelete("tmp-dir/dir2/") shouldEqual true
     fs.exists(path1) shouldEqual false
     fs.exists(path2) shouldEqual false
   }
