@@ -134,35 +134,43 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     statusList.length shouldEqual 1
   }
 
-  "listStatus('dummy-file')" should "throw FileNotFoundException" in {
+  "listStatus('no-exist-file')" should "throw FileNotFoundException" in {
     intercept[FileNotFoundException] {
       fs.listStatus(new Path("no-exist-file"))
     }
   }
 
   "listStatus('empty-dir')" should
-    "contains FileStatus{path=ceph://test-bucket/empty-dir} and its length = 1" in {
+    "contains any FileStatus because it is empty" in {
     val statusList = fs.listStatus(new Path("empty-dir"))
-    statusList should contain(fs.getFileStatus(new Path("empty-dir")))
-    statusList(0).isDirectory shouldEqual true
-    statusList.length shouldEqual 1
+    statusList should not contain(fs.getFileStatus(new Path("empty-dir")))
+    statusList.length shouldEqual 0
   }
 
   "listStatus('mochi-dir')" should
-    "contains FileStatus{path=ceph://test-bucket/mochi-dir} and its length = 4" in {
+    "contains FileStatus{path=ceph://test-bucket/mochi-dir/mochi1 not mochidir/ itself} and its length = 4" in {
     val statusList = fs.listStatus(new Path("mochi-dir"))
-    statusList should contain(fs.getFileStatus(new Path("mochi-dir")))
+    statusList should not contain(fs.getFileStatus(new Path("mochi-dir")))
+    statusList should contain(fs.getFileStatus(new Path("mochi-dir/mochi3")))
+    statusList should contain(fs.getFileStatus(new Path("mochi-dir/nest/")))
+    statusList should not contain(fs.getFileStatus(new Path("mochi-dir/nest/mochi4")))
     statusList.count(_.isFile) shouldEqual 3
+    statusList.count(_.isDirectory) shouldEqual 1
     statusList.length shouldEqual 4
   }
 
     "listStatus('ceph://test-bucket/') (bucket root)" should
-      "contains FileStatus{hello.txt, mochi-dir/mochi3, empty-dir/} and more than 7 objects" in {
+      "contains FileStatus{hello.txt, mochi-dir/mochi3, empty-dir/} except mochi-dir/nest/ and at least 4 objects" in {
       val statusList = fs.listStatus(new Path("ceph://test-bucket/"))
       statusList should contain(fs.getFileStatus(new Path("hello.txt")))
-      statusList should contain(fs.getFileStatus(new Path("mochi-dir/mochi3")))
+      statusList should contain(fs.getFileStatus(new Path("world.txt")))
       statusList should contain(fs.getFileStatus(new Path("empty-dir/")))
-      statusList.length should (be >= 7)
+      statusList should contain(fs.getFileStatus(new Path("mochi-dir/")))
+      statusList should not contain(fs.getFileStatus(new Path("mochi-dir/mochi3")))
+      statusList should not contain(fs.getFileStatus(new Path("mochi-dir/nest/")))
+      statusList.count(_.isFile) shouldEqual 2
+      statusList.count(_.isDirectory) shouldEqual 2
+      statusList.length should (be >= 4)
     }
 
   "open(new Path(\"hello.txt\"))" should "read string '**hello sc**ala world!' when 8 byte read" in {
@@ -282,16 +290,36 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
   "getAllDescendantRadosObjectNames(mochi-dir)" should
-    """contains "mochi-dir/" and "mochi-dir/mochi3"""" in {
+    """contains 6 objests in "mochi-dir/"""" in {
     val objectNames = fs.getAllDescendantRadosObjectNames(new Path("mochi-dir"))
-    objectNames.length shouldEqual 4
+    objectNames.length shouldEqual 6
     objectNames should contain("mochi-dir/")
+    objectNames should contain("mochi-dir/mochi1")
+    objectNames should contain("mochi-dir/mochi2")
     objectNames should contain("mochi-dir/mochi3")
+    objectNames should contain("mochi-dir/nest/")
+    objectNames should contain("mochi-dir/nest/mochi4")
+  }
+  "getAllDescendantRadosObjectNames(mochi-dir, limitCurrentDir = true)" should
+    """contains "mochi-dir/{'', mochi1-3, nest/, and not nest/mochi4}" and its length = 5 """ in {
+    val objectNames = fs.getAllDescendantRadosObjectNames(new Path("mochi-dir"), limitCurrentDir = true)
+    objectNames should contain("mochi-dir/")
+    objectNames should contain("mochi-dir/mochi1")
+    objectNames should contain("mochi-dir/mochi2")
+    objectNames should contain("mochi-dir/mochi3")
+    objectNames should contain("mochi-dir/nest/")
+    objectNames should not contain("mochi-dir/nest/mochi4")
+    objectNames.length shouldEqual 5
   }
 
   "getAllDescendantRadosObjectNames(/)" should
-    "return more than 7 objects (all the objects)" in {
-    fs.getAllDescendantRadosObjectNames(new Path("/")).length should (be >= 7)
+    "return more than 9 objects (all the objects)" in {
+    val objectNames = fs.getAllDescendantRadosObjectNames(new Path("/"))
+    objectNames should contain("mochi-dir/")
+    objectNames should contain("mochi-dir/mochi1")
+    objectNames should contain("mochi-dir/nest/")
+    objectNames should contain("mochi-dir/nest/mochi4")
+    objectNames.length shouldEqual 9
   }
 
   "getAllDescendantRadosObjectNames(no-exist-file)" should

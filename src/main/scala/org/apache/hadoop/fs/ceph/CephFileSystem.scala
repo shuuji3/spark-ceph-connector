@@ -276,7 +276,8 @@ class CephFileSystem extends FileSystem {
       if (isFile(path)) {
         Array[FileStatus](getFileStatus(path))
       } else if (isDirectory(path) || isBucketRoot(path)) {
-        val allDescendantObjectNames = getAllDescendantRadosObjectNames(path)
+        val allDescendantObjectNames =
+          getAllDescendantRadosObjectNames(path, limitCurrentDir = true, excludeGivenDirectory = true)
         allDescendantObjectNames.map(objectName => getFileStatus(new Path(objectName)))
       } else {
         throw new FileNotFoundException(s"listStatus: ${path} not found")
@@ -423,23 +424,28 @@ class CephFileSystem extends FileSystem {
    * @param path root object path
    * @return descendant object names
    */
-  def getAllDescendantRadosObjectNames(path: Path): Array[String] = {
+  def getAllDescendantRadosObjectNames(path: Path, limitCurrentDir: Boolean = false,
+                                       excludeGivenDirectory: Boolean = false): Array[String] = {
     val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
+    val pathIsBucketRoot: Boolean = isBucketRoot(path)
     try {
-      // Special case - bucket root
-      if (isBucketRoot(path)) {
-        ioCtx.listObjects()
-      }
-      else if (isFile(path)) {
+      if (isFile(path)) {
         Array[String](getRadosObjectName(path))
-      } else if (isDirectory(path)) {
+      } else if (isDirectory(path) || pathIsBucketRoot) {
         val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
-        val directoryName = s"${getRadosObjectName(path)}/"
-        val isDescendantRegex = s"${directoryName}[^/]*/?".r
+        val directoryName = if (pathIsBucketRoot) "" else s"${getRadosObjectName(path)}/"
+        val isDescendantRegex = if (limitCurrentDir)
+          s"${directoryName}[^/]*/?$$".r else s"${directoryName}[^/]*/?".r
 
         val allObjectNames: Array[String] = ioCtx.listObjects()
-        allObjectNames
-          .filter(objectName => isDescendantRegex.findPrefixMatchOf(objectName).isDefined)
+        val currentDirObjects =
+          allObjectNames
+            .filter(objectName => isDescendantRegex.findPrefixMatchOf(objectName).isDefined)
+        if (excludeGivenDirectory) {
+          currentDirObjects.filter(_ != directoryName)
+        } else {
+          currentDirObjects
+        }
       } else {
         throw new FileNotFoundException(s"${path} not exists")
       }
