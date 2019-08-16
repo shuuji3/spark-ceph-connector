@@ -86,6 +86,9 @@ class CephFileSystem extends FileSystem {
     val parentPath = path.getParent
     mkdirs(parentPath)
 
+    // Touch when create()
+    ioCtx.write(objectName, "")
+
     val out = new CephFSDataOutputStream(ioCtx, objectName, bufferSize)
     new FSDataOutputStream(out, null)
   }
@@ -157,14 +160,14 @@ class CephFileSystem extends FileSystem {
     println(s"!!! delete(path = ${path}, recursive = ${recursive})")
     if (isFile(path)) {
       val objectName: String = getRadosObjectName(path)
-//      radosDelete(objectName)
-      println(s"!!! fake delete !!! radosDelete(${objectName})", objectName)
+      radosDelete(objectName)
+      println(s"!!! ⚠ real delete !!! radosDelete(${objectName})")
       true
     } else if (isDirectory(path)) {
       if (recursive) {
         val objectNames = getAllDescendantRadosObjectNames(path)
-//        objectNames.foreach(radosDelete)
-        objectNames.foreach(objectName => println(s"!!! fake delete !!! radosDelete(${objectNames})"))
+        objectNames.foreach(radosDelete)
+        objectNames.foreach(objectName => println(s"!!! ⚠ real delete !!! radosDelete(${objectName})"))
         true
       } else {
         throw new IOException(s"${path} did not deleted because recursive is set to false")
