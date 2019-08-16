@@ -74,7 +74,7 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def create(path: Path, permission: FsPermission, overwrite: Boolean, bufferSize: Int, replication: Short, blockSize: Long, progress: Progressable): FSDataOutputStream = {
-    println(s"!!! create(path = ${path}, perm = ${permission}, overwrite = ${overwrite}, bufferSize = ${bufferSize}, replication = ${replication}, blockSize = ${blockSize}, progress = ${progress})")
+    println(s"☀ create(path = ${path}, perm = ${permission}, overwrite = ${overwrite}, bufferSize = ${bufferSize}, replication = ${replication}, blockSize = ${blockSize}, progress = ${progress})")
     val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
     val objectName = getRadosObjectName(path)
     if (isDirectory(path)) {
@@ -105,7 +105,6 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def append(f: Path, bufferSize: Int, progress: Progressable): FSDataOutputStream = {
-    println(s"!!! append(path = ${f})")
     throw new UnsupportedOperationException("CephFileSystem: not supported")
   }
 
@@ -119,7 +118,7 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def rename(src: Path, dst: Path): Boolean = {
-    println(s"!!! rename(src = ${src}, dst = ${dst})")
+    println(s"🔃 rename(src = ${src}, dst = ${dst})")
     // Check if dst exists
     if (exists(dst)) {
       throw new FileAlreadyExistsException(s"${dst} already exists")
@@ -157,27 +156,25 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def delete(path: Path, recursive: Boolean): Boolean = {
-    println(s"!!! delete(path = ${path}, recursive = ${recursive})")
+    println(s"🗑 delete(path = ${path}, recursive = ${recursive})")
     if (isFile(path)) {
       val objectName: String = getRadosObjectName(path)
       radosDelete(objectName)
-      println(s"!!! ⚠ real delete !!! radosDelete(${objectName})")
+      println(s"❗ real delete ❗ radosDelete(${objectName})")
       true
     } else if (isDirectory(path)) {
       if (recursive) {
         val objectNames = getAllDescendantRadosObjectNames(path)
         objectNames.foreach(radosDelete)
-        objectNames.foreach(objectName => println(s"!!! ⚠ real delete !!! radosDelete(${objectName})"))
+        println(s"❗ real delete ❗ [recursive] radosDelete(${objectNames.mkString(",")})")
         true
       } else {
         throw new IOException(s"${path} did not deleted because recursive is set to false")
       }
     } else {
       val ioCtx = cluster.ioCtxCreate(rootBucket)
-      println("delete: current objects:", ioCtx.listObjects().mkString(", "))
       ioCtx.close()
-//      throw new FileNotFoundException(s"${path} is neither a file nor a directory")
-      println(s"""!!! return false !!! instead of throw new FileNotFoundException("${path} is neither a file nor a directory")""")
+      println(s"""❓ trying to delete non exist path "${path}"""")
       false
     }
   }
@@ -252,7 +249,6 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def isDirectory(path: Path): Boolean = {
-    println(s"!!! isDirectory(path = ${path})")
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     val objectName: String = getRadosObjectName(path)
     val directoryName: String = s"${objectName}/"
@@ -276,7 +272,6 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def isFile(path: Path): Boolean = {
-    println(s"!!! isFile(path = ${path})")
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     val objectName: String = getRadosObjectName(path)
 
@@ -316,7 +311,6 @@ class CephFileSystem extends FileSystem {
   @throws[FileNotFoundException]
   @throws[IOException]
   override def listStatus(path: Path): Array[FileStatus] = {
-    println(s"!!! listStatus(path = ${path})")
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
       if (isFile(path)) {
@@ -388,7 +382,6 @@ class CephFileSystem extends FileSystem {
    * @param new_dir Path of new working directory
    */
   override def setWorkingDirectory(new_dir: Path): Unit = {
-    println(s"!!! setWorkingDirectory(new_dir = ${new_dir})")
     val path = fixRelativePart(new_dir)
     workingDirectory = path
   }
