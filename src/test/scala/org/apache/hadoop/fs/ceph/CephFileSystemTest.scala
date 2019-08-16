@@ -5,7 +5,6 @@ import java.io.{FileNotFoundException, IOException}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.scalatest._
-import org.scalatest.matchers._
 
 class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
 
@@ -68,9 +67,9 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.exists(new Path("empty-dir")) shouldEqual true
   }
 
-//  "exists(ceph://test-bucket/)" should "return true" in {
-//    fs.exists(new Path("ceph://test-bucket/")) shouldEqual true
-//  }
+  //  "exists(ceph://test-bucket/)" should "return true" in {
+  //    fs.exists(new Path("ceph://test-bucket/")) shouldEqual true
+  //  }
 
   "getFileStatus(new Path('hello.txt')).getLen" should "return 19" in {
     fs.getFileStatus(new Path("hello.txt")).getLen shouldEqual 19
@@ -160,35 +159,35 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
   "listStatus('empty-dir')" should
     "contains any FileStatus because it is empty" in {
     val statusList = fs.listStatus(new Path("empty-dir"))
-    statusList should not contain(fs.getFileStatus(new Path("empty-dir")))
+    statusList should not contain (fs.getFileStatus(new Path("empty-dir")))
     statusList.length shouldEqual 0
   }
 
   "listStatus('mochi-dir')" should
     "contains FileStatus{path=ceph://test-bucket/mochi-dir/mochi1 not mochidir/ itself} and its length = 4" in {
     val statusList = fs.listStatus(new Path("mochi-dir"))
-    statusList should not contain(fs.getFileStatus(new Path("mochi-dir")))
+    statusList should not contain (fs.getFileStatus(new Path("mochi-dir")))
     statusList should contain(fs.getFileStatus(new Path("mochi-dir/mochi3")))
     statusList should contain(fs.getFileStatus(new Path("mochi-dir/nest/")))
-    statusList should not contain(fs.getFileStatus(new Path("mochi-dir/nest/mochi4")))
+    statusList should not contain (fs.getFileStatus(new Path("mochi-dir/nest/mochi4")))
     statusList.count(_.isFile) shouldEqual 3
     statusList.count(_.isDirectory) shouldEqual 1
     statusList.length shouldEqual 4
   }
 
-    "listStatus('ceph://test-bucket/') (bucket root)" should
-      "contains FileStatus{hello.txt, mochi-dir/mochi3, empty-dir/} except mochi-dir/nest/ and at least 4 objects" in {
-      val statusList = fs.listStatus(new Path("ceph://test-bucket/"))
-      statusList should contain(fs.getFileStatus(new Path("hello.txt")))
-      statusList should contain(fs.getFileStatus(new Path("world.txt")))
-      statusList should contain(fs.getFileStatus(new Path("empty-dir/")))
-      statusList should contain(fs.getFileStatus(new Path("mochi-dir/")))
-      statusList should not contain(fs.getFileStatus(new Path("mochi-dir/mochi3")))
-      statusList should not contain(fs.getFileStatus(new Path("mochi-dir/nest/")))
-      statusList.count(_.isFile) shouldEqual 2
-      statusList.count(_.isDirectory) shouldEqual 2
-      statusList.length should (be >= 4)
-    }
+  "listStatus('ceph://test-bucket/') (bucket root)" should
+    "contains FileStatus{hello.txt, mochi-dir/mochi3, empty-dir/} except mochi-dir/nest/ and at least 4 objects" in {
+    val statusList = fs.listStatus(new Path("ceph://test-bucket/"))
+    statusList should contain(fs.getFileStatus(new Path("hello.txt")))
+    statusList should contain(fs.getFileStatus(new Path("world.txt")))
+    statusList should contain(fs.getFileStatus(new Path("empty-dir/")))
+    statusList should contain(fs.getFileStatus(new Path("mochi-dir/")))
+    statusList should not contain (fs.getFileStatus(new Path("mochi-dir/mochi3")))
+    statusList should not contain (fs.getFileStatus(new Path("mochi-dir/nest/")))
+    statusList.count(_.isFile) shouldEqual 2
+    statusList.count(_.isDirectory) shouldEqual 2
+    statusList.length should (be >= 4)
+  }
 
   "open(new Path(\"hello.txt\"))" should "read string '**hello sc**ala world!' when 8 byte read" in {
     val inputStream = fs.open(new Path("hello.txt"))
@@ -246,6 +245,28 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
 
     totalRead shouldEqual 19
     readString shouldEqual "hello scala world!\n"
+  }
+
+  """create("tmp-object").write("tmp-object")""" should "has 'tmp-object' as its content" in {
+    val path = new Path("tmp-object")
+    fs.exists(path) shouldEqual false
+
+    // Create object
+    val tmp = fs.create(path)
+    val content = "tmp-content".map(_.toByte).toArray
+    tmp.write(content)
+    fs.exists(path) shouldEqual true
+
+    // Read object
+    val readObject = fs.open(path)
+    val buf = new Array[Byte](15)
+    val numRead = readObject.read(buf)
+    numRead shouldEqual 11
+    buf shouldEqual content ++ Array[Byte](0, 0, 0, 0)
+
+    // Delete object
+    fs.delete(path, recursive = false)
+    fs.exists(path) shouldEqual false
   }
 
   """isDirectory(new Path("empty-dir/"))""" should "return true" in {
@@ -325,7 +346,7 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     objectNames should contain("mochi-dir/mochi2")
     objectNames should contain("mochi-dir/mochi3")
     objectNames should contain("mochi-dir/nest/")
-    objectNames should not contain("mochi-dir/nest/mochi4")
+    objectNames should not contain ("mochi-dir/nest/mochi4")
     objectNames.length shouldEqual 5
   }
 
