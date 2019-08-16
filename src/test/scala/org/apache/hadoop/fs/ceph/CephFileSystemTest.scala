@@ -55,6 +55,23 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.getWorkingDirectory shouldEqual new Path("ceph://test-bucket/")
   }
 
+  // exists() is depends on getFileStatus()
+  "exists(hello.txt)" should "return true" in {
+    fs.exists(new Path("hello.txt")) shouldEqual true
+  }
+
+  "exists(no-exist-file)" should "return false" in {
+    fs.exists(new Path("no-exist-fil")) shouldEqual false
+  }
+
+  "exists(empty-dir/)" should "return true" in {
+    fs.exists(new Path("empty-dir")) shouldEqual true
+  }
+
+//  "exists(ceph://test-bucket/)" should "return true" in {
+//    fs.exists(new Path("ceph://test-bucket/")) shouldEqual true
+//  }
+
   "getFileStatus(new Path('hello.txt')).getLen" should "return 19" in {
     fs.getFileStatus(new Path("hello.txt")).getLen shouldEqual 19
   }
