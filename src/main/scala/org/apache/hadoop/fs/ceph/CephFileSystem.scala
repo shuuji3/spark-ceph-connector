@@ -107,7 +107,7 @@ class CephFileSystem extends FileSystem {
   override def rename(src: Path, dst: Path): Boolean = {
     // Check if dst exists
     if (isFile(dst) || isDirectory(dst)) {
-      throw new IOException(s"${dst} already exists")
+      throw new FileAlreadyExistsException(s"${dst} already exists")
     }
 
     if (isFile(src)) {
@@ -177,7 +177,7 @@ class CephFileSystem extends FileSystem {
 
       // if dst file already exist stop the process
       ioCtx.close()
-      throw new IOException(s"dest file '${writeObjectName}' already exists")
+      throw new FileAlreadyExistsException(s"dest file '${writeObjectName}' already exists")
     } catch {
       case _: RadosNotFoundException => ()
     }
