@@ -159,7 +159,8 @@ class CephFileSystem extends FileSystem {
         throw new IOException(s"${path} did not deleted because recursive is set to false")
       }
     } else {
-      throw new FileNotFoundException(s"${path} is neither a file nor a directory")
+      // Return false not FileNotFoundException When the object not found
+      false
     }
   }
 

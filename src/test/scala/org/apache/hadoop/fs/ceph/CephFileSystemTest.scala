@@ -332,10 +332,8 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.exists(path2) shouldEqual false
   }
 
-  """delete("no-exist-file")""" should "throw FileNotFoundException" in {
-    intercept[FileNotFoundException] {
-      fs.delete(new Path("no-exist-file"), recursive = false)
-    }
+  """delete("no-exist-file")""" should "return false" in {
+    fs.delete(new Path("no-exist-file"), recursive = false) shouldEqual false
   }
 
   """delete("tmp-dir/", recursive = false)""" should "throw IOException because of the lack of recursive for dir" in {
