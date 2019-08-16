@@ -146,8 +146,33 @@ class CephFileSystem extends FileSystem {
   @throws[IOException]
   override def delete(path: Path, recursive: Boolean): Boolean = {
     // TODO: handle the recursive param
+    if (isFile(path)) {
+      val objectName = getRadosObjectName(path)
+      radosDelete(objectName)
+    } else if (isDirectory(path)) {
+      if (recursive) {
+        val objectNames = getAllDescendantRadosObjectNames(path)
+        objectNames.foreach(radosDelete)
+        true
+      } else {
+        throw new IOException(s"${path} did not deleted because recursive is set to false")
+      }
+    } else {
+      throw new FileNotFoundException(s"${path} is neither a file nor a directory")
+    }
+  }
 
-    val objectName = getRadosObjectName(path)
+  /**
+   * Delete an object using the object name.
+   *
+   * This methods is resemble to the delete() but the parameter is String type
+   * to handle RADOS directory object (i.e. dir-name/ not dir-name)
+   *
+   * @param objectName the object to delete
+   * @return
+   */
+  @throws[IOException]
+  def radosDelete(objectName: String): Boolean = {
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
       ioCtx.remove(objectName)
@@ -305,6 +330,7 @@ class CephFileSystem extends FileSystem {
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
       val absolutePath: Path = fixRelativePart(path)
+      // TODO: should return FileStatus for the root bucket?
       val isDir: Boolean = isDirectory(absolutePath)
       val objectName: String = getRadosObjectName(path)
       val fileName: String = if (isDir) objectName + "/" else objectName

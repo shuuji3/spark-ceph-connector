@@ -269,6 +269,59 @@ class CephFileSystemTest extends FlatSpec with Matchers with BeforeAndAfter {
     fs.exists(path) shouldEqual false
   }
 
+  """radosDelete("tmp-object")""" should "delete the object directly" in {
+    val path = new Path("tmp-object")
+    fs.exists(path) shouldEqual false
+
+    // Create object
+    val tmp = fs.create(path)
+    val content = "tmp-content".map(_.toByte).toArray
+    tmp.write(content)
+    fs.exists(path) shouldEqual true
+
+    // Delete object
+    val result = fs.radosDelete("tmp-object")
+    result shouldEqual true
+    fs.exists(path) shouldEqual false
+  }
+
+  """radosDelete("tmp-dir/")""" should "delete the directory object directly" in {
+    val path = new Path("tmp-dir")
+    fs.exists(path) shouldEqual false
+
+    // Create object
+    val tmp = fs.mkdirs(path)
+    fs.exists(path) shouldEqual true
+    fs.isDirectory(path) shouldEqual true
+
+    // Delete object
+    val result = fs.radosDelete("tmp-dir/")
+    result shouldEqual true
+    fs.exists(path) shouldEqual false
+  }
+
+  """mkdirs("tmp-dir/dir2")""" should "create 2 directory objects" in {
+    val path1 = new Path("tmp-dir")
+    val path2 = new Path("tmp-dir/dir2")
+    fs.exists(path1) shouldEqual false
+    fs.exists(path2) shouldEqual false
+
+    // Create object
+    fs.mkdirs(path2) // check if 2 directory objects created
+    fs.exists(path1) shouldEqual true
+    fs.exists(path2) shouldEqual true
+    fs.isDirectory(path1) shouldEqual true
+    fs.isDirectory(path2) shouldEqual true
+
+    // Delete object
+    val result1 = fs.radosDelete("tmp-dir/")
+    val result2 = fs.radosDelete("tmp-dir/dir2/")
+    result1 shouldEqual true
+    result2 shouldEqual true
+    fs.exists(path1) shouldEqual false
+    fs.exists(path2) shouldEqual false
+  }
+
   """isDirectory(new Path("empty-dir/"))""" should "return true" in {
     fs.isDirectory(new Path("empty-dir/")) shouldEqual true
   }
