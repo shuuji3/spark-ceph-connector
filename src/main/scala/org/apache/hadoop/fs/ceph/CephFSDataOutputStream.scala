@@ -66,6 +66,7 @@ class CephFSDataOutputStream(ioCtx: IoCTX, objectName: String, bufferSize: Int)
    * @return
    */
   def write(src: ByteBuffer): Unit = {
+    println(s"""!!! >>> write("${new String(src.array)}")""")
     channel.write(src)
   }
 
