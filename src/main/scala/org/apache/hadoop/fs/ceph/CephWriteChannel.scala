@@ -64,6 +64,7 @@ class CephWriteChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extend
    */
   @throws[IOException]
   override def write(src: ByteBuffer): Int = {
+    val start = System.currentTimeMillis()
     checkIsOpen()
     val length = src.remaining()
     val buf = ByteBuffer.allocate(length)
@@ -75,6 +76,7 @@ class CephWriteChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extend
       case e: IllegalArgumentException => throw new IndexOutOfBoundsException(e.getMessage)
     }
     position(position + length)
+    println(s"📝 write\t(ByteBuffer)[position = ${position()}, length = ${length}]\t${System.currentTimeMillis - start}")
     length
   }
 

@@ -13,9 +13,9 @@ import org.apache.hadoop.util.Progressable
 class CephFileSystem extends FileSystem {
   // Connect to a Ceph cluster
   val cluster: Rados = new Rados("admin")
-  val defaultBufferSize: Int = 4 * 1024
+  val defaultBufferSize: Int = 32 * 1024 * 1024
   var rootBucket: String = "test-bucket" // TODO: Change temporary definition
-  var confFilePath: String = "/home/shuuji3/ceph-cluster/ceph.conf"
+  var confFilePath: String = "/etc/ceph/ceph.conf" // TODO: Change arbitary path
   cluster.confReadFile(new File(confFilePath))
   cluster.connect()
   var workingDirectory: Path = getFileSystemRoot
@@ -118,6 +118,8 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def rename(src: Path, dst: Path): Boolean = {
+    val start = System.currentTimeMillis()
+    println(s"🔃 rename\t[file](src = ${src}, dst = ${dst})\tstart")
     // Check if dst exists
     if (exists(dst)) {
       throw new FileAlreadyExistsException(s"${dst} already exists")
@@ -127,7 +129,9 @@ class CephFileSystem extends FileSystem {
       val srcObjectName: String = getRadosObjectName(src)
       val dstObjectName: String = getRadosObjectName(dst)
       radosCopy(srcObjectName, dstObjectName)
-      delete(src, recursive = false)
+      val r = delete(src, recursive = false)
+      println(s"🔃 rename\t[file](src = ${src}, dst = ${dst})\t${System.currentTimeMillis - start}")
+      r
     } else if (isDirectory(src)) {
       val directoryName = s"${getRadosObjectName(src)}/"
       val newDirectoryName = s"${getRadosObjectName(dst)}/"
@@ -137,7 +141,9 @@ class CephFileSystem extends FileSystem {
         val newObjectName = s"^${directoryName}".r.replaceFirstIn(objectName, newDirectoryName)
         radosCopy(objectName, newObjectName)
       })
-      delete(src, recursive = true)
+      val r = delete(src, recursive = true)
+      println(s"🔃 rename\t[directory](src = ${src}, dst = ${dst})\t${System.currentTimeMillis - start}")
+      r
     } else {
       throw new IOException(s"${src} is neither a file nor a directory")
     }
@@ -155,13 +161,18 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def delete(path: Path, recursive: Boolean): Boolean = {
+    val start = System.currentTimeMillis()
+    println(s"🗑 delete\t(path = ${path})\tstart")
     if (isFile(path)) {
       val objectName: String = getRadosObjectName(path)
-      radosDelete(objectName)
+      val result = radosDelete(objectName)
+      println(s"🗑 delete\t[file](path = ${path})\t${System.currentTimeMillis - start}")
+      result
     } else if (isDirectory(path)) {
       if (recursive) {
         val objectNames = getAllDescendantRadosObjectNames(path)
         objectNames.foreach(radosDelete)
+        println(s"🗑 delete\t[directory](path = ${path})\t${System.currentTimeMillis - start}")
         true
       } else {
         throw new IOException(s"${path} did not deleted because recursive is set to false")
@@ -183,9 +194,11 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   def radosDelete(objectName: String): Boolean = {
+    val start = System.currentTimeMillis()
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     try {
       ioCtx.remove(objectName)
+      println(s"  💣 radosDelete\t(objectName = ${objectName})\t${System.currentTimeMillis - start}")
       true
     } catch {
       case _: RadosNotFoundException => false
@@ -202,6 +215,7 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   def radosCopy(readObjectName: String, writeObjectName: String): Unit = {
+    val start = System.currentTimeMillis()
     val buf = ByteBuffer.allocate(defaultBufferSize)
     val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
     val readChannel = new CephReadChannel(ioCtx, readObjectName, defaultBufferSize)
@@ -226,6 +240,7 @@ class CephFileSystem extends FileSystem {
         writeChannel.write(buf)
         buf.clear
       }
+      println(s"  🐙 radosCopy\t(src = ${readObjectName}, dst = ${writeObjectName})\t${System.currentTimeMillis - start}")
     } finally {
       ioCtx.close()
     }
