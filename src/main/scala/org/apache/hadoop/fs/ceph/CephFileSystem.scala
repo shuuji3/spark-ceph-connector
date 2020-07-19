@@ -15,7 +15,7 @@ class CephFileSystem extends FileSystem {
   val cluster: Rados = new Rados("admin")
   val defaultBufferSize: Int = 4 * 1024
   var rootBucket: String = "test-bucket" // TODO: Change temporary definition
-  var confFilePath: String = "/home/shuuji3/ceph-cluster/ceph.conf"
+  var confFilePath: String = "/etc/ceph/ceph.conf"
   cluster.confReadFile(new File(confFilePath))
   cluster.connect()
   var workingDirectory: Path = getFileSystemRoot
@@ -267,11 +267,20 @@ class CephFileSystem extends FileSystem {
     val ioCtx = cluster.ioCtxCreate(rootBucket)
     val objectName: String = getRadosObjectName(path)
 
+    if (objectName == "") {
+      // In case objectName is empty (root path), ioCtx.stat() does not throw RadosNotFoundException
+      return false
+    }
+
     try {
       ioCtx.stat(objectName) // throw RadosNotFoundException if not exist
       true
     } catch {
       case e: RadosNotFoundException => false
+      case _: Throwable => {
+        println("[error]   * caught unknown Throwable") // debug
+        false
+      }
     } finally {
       ioCtx.close()
     }
