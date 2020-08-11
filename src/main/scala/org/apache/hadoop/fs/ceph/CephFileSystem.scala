@@ -74,6 +74,7 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def create(path: Path, permission: FsPermission, overwrite: Boolean, bufferSize: Int, replication: Short, blockSize: Long, progress: Progressable): FSDataOutputStream = {
+    println(s"[info] create(path = $path, bufferSize = $bufferSize)")
     val ioCtx: IoCTX = cluster.ioCtxCreate(rootBucket)
     val objectName = getRadosObjectName(path)
     if (isDirectory(path)) {
@@ -118,6 +119,8 @@ class CephFileSystem extends FileSystem {
    */
   @throws[IOException]
   override def rename(src: Path, dst: Path): Boolean = {
+    println("@rename")
+    println(s"src: ${src}\n=> dst: ${dst}")
     // Check if dst exists
     if (exists(dst)) {
       throw new FileAlreadyExistsException(s"${dst} already exists")

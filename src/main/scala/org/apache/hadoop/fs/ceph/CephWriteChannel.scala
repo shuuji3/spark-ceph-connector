@@ -75,6 +75,7 @@ class CephWriteChannel(ioCtx: IoCTX, objectName: String, bufferSize: Int) extend
       case e: IllegalArgumentException => throw new IndexOutOfBoundsException(e.getMessage)
     }
     position(position + length)
+    println(s"[info] write(src: ByteBuffer) @ CephWriteChannel (length = $length, position = $position)")
     length
   }
 
