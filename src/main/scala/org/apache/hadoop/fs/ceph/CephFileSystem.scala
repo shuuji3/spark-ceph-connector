@@ -13,7 +13,7 @@ import org.apache.hadoop.util.Progressable
 class CephFileSystem extends FileSystem {
   // Connect to a Ceph cluster
   val cluster: Rados = new Rados("admin")
-  val defaultBufferSize: Int = 4 * 1024
+  val defaultBufferSize: Int = 4 * 1024 * 1024
   var rootBucket: String = "test-bucket" // TODO: Change temporary definition
   var confFilePath: String = "/etc/ceph/ceph.conf"
   cluster.confReadFile(new File(confFilePath))
